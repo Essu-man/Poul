@@ -4,15 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import {Dialog,DialogContent,DialogDescription,DialogFooter,DialogHeader,DialogTitle,DialogTrigger,} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger, } from "@/components/ui/popover";
@@ -423,7 +415,7 @@ const App: React.FC = () => {
         </nav>
         <div className="p-4 border-t mt-auto">
           <a
-            href="https://readdy.ai/home/2306c804-ba9f-4725-9ed6-17d1801e445b/7081e8d7-57d1-40a5-ae6c-31a17b8c8e49"
+            href="#"
             data-readdy="true"
           >
             <Button
@@ -436,7 +428,7 @@ const App: React.FC = () => {
           </a>
           <div className="flex items-center mt-4 pt-4 border-t">
             <Avatar className="cursor-pointer">
-              <AvatarImage src="https://public.readdy.ai/ai/img_res/1802dc3c7f2d978b142867d632245bd0.jpg" />
+              <AvatarImage src="#" />
               <AvatarFallback>JD</AvatarFallback>
             </Avatar>
             <div className="ml-2">
