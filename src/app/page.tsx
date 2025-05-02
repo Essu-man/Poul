@@ -36,7 +36,7 @@ export default function Home() {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Redirect to dashboard with animation
-    router.push("/dashboard");
+    router.push("/Dashboard");
   };
 
   if (isLoading) {
