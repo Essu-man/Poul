@@ -1,5 +1,5 @@
 "use client";
-
+import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -152,8 +152,9 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header activeTab="dashboard" />
+    <div className="flex h-screen bg-gray-50">
+      <Sidebar activeTab="dashboard" />
+
       <main className="flex-1 p-6 space-y-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
