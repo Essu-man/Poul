@@ -211,6 +211,7 @@ export default function Dashboard() {
                     {index < tasks.length - 1 && <Separator />}
                   </>
                 ))}
+                <AddTaskDialog />
               </div>
             </CardContent>
           </Card>
@@ -284,9 +285,27 @@ function InventoryItem({ name, level }: InventoryItemProps) {
 }
 
 // Component for task items
+// Add these imports at the top
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+
 function TaskItem({ name, time, priority, icon, color }: TaskItemProps) {
+  const getPriorityColor = (priority: "High" | "Medium" | "Low") => {
+    switch (priority) {
+      case "High":
+        return "bg-red-100 text-red-600";
+      case "Medium":
+        return "bg-amber-100 text-amber-600";
+      case "Low":
+        return "bg-green-100 text-green-600";
+    }
+  };
+
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg">
       <div className="flex items-center">
         <div className={`w-8 h-8 rounded-full bg-${color}-100 flex items-center justify-center text-${color}-600 mr-3`}>
           <i className={`fas fa-${icon}`}></i>
@@ -296,7 +315,75 @@ function TaskItem({ name, time, priority, icon, color }: TaskItemProps) {
           <p className="text-xs text-gray-500">{time}</p>
         </div>
       </div>
-      <Badge variant={priority === "High" ? "default" : "outline"}>{priority}</Badge>
+      <Badge className={`${getPriorityColor(priority)}`}>{priority}</Badge>
     </div>
   );
 }
+
+// Add the AddTaskDialog component
+function AddTaskDialog() {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="w-full bg-black text-white hover:bg-black/90">
+          <i className="fas fa-plus mr-2"></i>
+          Add New Task
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Add New Task</DialogTitle>
+          <DialogDescription>Create a new task for farm management system.</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <label htmlFor="task-name" className="text-sm font-medium">Task Name</label>
+            <Input id="task-name" placeholder="Enter task name" />
+          </div>
+          <div className="grid gap-2">
+            <label htmlFor="description" className="text-sm font-medium">Description</label>
+            <Textarea id="description" placeholder="Enter task description" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <label htmlFor="date" className="text-sm font-medium">Date</label>
+              <Input id="date" type="date" />
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="time" className="text-sm font-medium">Time</label>
+              <Input id="time" type="time" />
+            </div>
+          </div>
+          <div className="grid gap-2">
+            <label htmlFor="priority" className="text-sm font-medium">Priority Level</label>
+            <Select>
+              <SelectTrigger>
+                <SelectValue placeholder="Select priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <label htmlFor="assignee" className="text-sm font-medium">Assignee</label>
+            <Input id="assignee" placeholder="Select assignee" />
+          </div>
+          <div className="grid gap-2">
+            <label htmlFor="notes" className="text-sm font-medium">Notes</label>
+            <Input id="notes" placeholder="Add additional notes" />
+          </div>
+        </div>
+        <div className="flex justify-end gap-3">
+          <DialogTrigger asChild>
+            <Button variant="outline">Cancel</Button>
+          </DialogTrigger>
+          <Button type="submit">Save Task</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
