@@ -206,10 +206,10 @@ export default function Dashboard() {
             <CardContent>
               <div className="space-y-4">
                 {tasks.map((task, index) => (
-                  <>
-                    <TaskItem key={index} {...task} />
+                  <div key={`task-${index}`}>
+                    <TaskItem {...task} />
                     {index < tasks.length - 1 && <Separator />}
-                  </>
+                  </div>
                 ))}
                 <AddTaskDialog />
               </div>
@@ -386,4 +386,3 @@ function AddTaskDialog() {
     </Dialog>
   );
 }
-
