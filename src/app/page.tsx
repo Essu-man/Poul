@@ -8,11 +8,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from "@/components/ui/label";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { useUser } from '@auth0/nextjs-auth0/client';
+
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [showSignUp, setShowSignUp] = useState(false);
   const [isLoginLoading, setIsLoginLoading] = useState(false);
+  const { user, error, isLoading } = useUser();
   const router = useRouter();
 
   useEffect(() => {
