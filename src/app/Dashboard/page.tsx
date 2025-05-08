@@ -48,7 +48,7 @@ export default function Dashboard() {
     eggProduction: {
       total: 0,
       change: "+12%",
-      trend: "up" as "up" | "down"  // Type assertion to match the interface
+      trend: "up" as "up" | "down"  
     },
     feedConsumption: {
       total: 0,
