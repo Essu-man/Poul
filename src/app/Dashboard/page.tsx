@@ -10,6 +10,8 @@ import { format } from "date-fns";
 import * as echarts from "echarts";
 import { useEffect, useState } from "react";
 
+
+
 interface StatCardProps {
   title: string;
   value: number;
@@ -43,7 +45,6 @@ interface TaskItemProps {
 export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
 
-  // Sample data - replace with actual data
   const stats = {
     eggProduction: {
       total: 0,
@@ -151,6 +152,78 @@ export default function Dashboard() {
     }
   }, []);
 
+  if (isLoading) {
+    return (
+      <div className="flex h-screen bg-gray-50">
+        <Sidebar activeTab="dashboard" />
+      
+        <main className="flex-1 p-6 space-y-6">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatCard
+              title="Total Egg Production"
+              value={stats.eggProduction.total}
+              unit="eggs today"
+              change={stats.eggProduction.change}
+              trend={stats.eggProduction.trend}
+            />
+            <StatCard
+              title="Feed Consumption"
+              value={stats.feedConsumption.total}
+              unit="kg today"
+              change={stats.feedConsumption.change}
+              trend={stats.feedConsumption.trend}
+            />
+            <StatCard
+              title="Active Medications"
+              value={stats.activeMedications.total}
+              unit="treatments"
+              subtitle={`Next completion in ${stats.activeMedications.nextCompletion}`}
+            />
+            <StatCard
+              title="Total Birds"
+              value={stats.totalBirds.total}
+              unit="birds"
+              subtitle={stats.totalBirds.status}
+            />
+          </div>
+      
+          {/* Charts and Tasks */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Production Trends</CardTitle>
+                <CardDescription>Daily egg production and feed consumption</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div id="productionChart" className="w-full h-80" />
+              </CardContent>
+            </Card>
+      
+            {/* Upcoming Tasks */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Upcoming Tasks</CardTitle>
+                <CardDescription>Scheduled farm activities</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {tasks.map((task, index) => (
+                    <div key={`task-${index}`}>
+                      <TaskItem {...task} />
+                      {index < tasks.length - 1 && <Separator />}
+                    </div>
+                  ))}
+                  <AddTaskDialog />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar activeTab="dashboard" />
@@ -222,7 +295,7 @@ export default function Dashboard() {
   );
 }
 
-// Component for stat cards
+// Move these component definitions outside the main Dashboard component
 function StatCard({ title, value, unit, change, trend, subtitle }: StatCardProps) {
   return (
     <Card>
