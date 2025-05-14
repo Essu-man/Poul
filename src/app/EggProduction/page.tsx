@@ -116,44 +116,6 @@ export default function EggProductionPage() {
         <Header activeTab="egg-production" />
         <div className="p-6">
           {/* Header */}
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h1 className="text-2xl font-bold">Egg Production</h1>
-              <p className="text-gray-500">Management System</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <Button variant="outline" onClick={handleExportData}>
-                <i className="fas fa-download mr-2"></i>
-                Export Data
-              </Button>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button>
-                    <i className="fas fa-plus mr-2"></i>
-                    New Entry
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Record Egg Production</DialogTitle>
-                    <DialogDescription>
-                      Enter the daily egg production details below.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    {/* Form fields go here - reuse your existing form components */}
-                    <Button variant="outline" onClick={() => window.location.reload()}>Reset</Button>
-                    <Button onClick={handleSaveRecord}>Save Record</Button>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => window.location.reload()}>
-                      Reset
-                    </Button>
-                    <Button onClick={handleSaveRecord}>Save Record</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
             <div className="flex items-center gap-4">
               <Select defaultValue="all">
                 <SelectTrigger className="w-[180px]">
@@ -173,7 +135,7 @@ export default function EggProductionPage() {
                 onDateChange={(date) => console.log(date)}
               />
             </div>
-          </div>
+
 
           {/* Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
