@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface EggProduction {
   date: string;
@@ -74,19 +74,57 @@ export default function EggProductionPage() {
     }, 0);
   };
 
-  const handleSaveRecord = () => {
-    setProductionHistory((prev) => [eggProduction, ...prev]);
-    // Reset form after saving
-    setEggProduction({
-      date: format(new Date(), "yyyy-MM-dd"),
-      peewee: { crates: 0, pieces: 0 },
-      small: { crates: 0, pieces: 0 },
-      medium: { crates: 0, pieces: 0 },
-      large: { crates: 0, pieces: 0 },
-      extraLarge: { crates: 0, pieces: 0 },
-      jumbo: { crates: 0, pieces: 0 }  // Added missing jumbo property
-    });
+  const handleSaveRecord = async () => {
+    try {
+      const response = await fetch('/api/egg-production', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(eggProduction),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save record');
+      }
+
+      // Reset form after saving
+      setEggProduction({
+        date: format(new Date(), "yyyy-MM-dd"),
+        peewee: { crates: 0, pieces: 0 },
+        small: { crates: 0, pieces: 0 },
+        medium: { crates: 0, pieces: 0 },
+        large: { crates: 0, pieces: 0 },
+        extraLarge: { crates: 0, pieces: 0 },
+        jumbo: { crates: 0, pieces: 0 }
+      });
+
+      // Fetch updated records
+      fetchProductionHistory();
+    } catch (error) {
+      console.error('Error saving record:', error);
+      // Add error handling (e.g., toast notification)
+    }
   };
+
+  const fetchProductionHistory = async () => {
+    try {
+      const response = await fetch('/api/egg-production');
+      if (!response.ok) {
+        throw new Error('Failed to fetch records');
+      }
+      const data = await response.json();
+      setProductionHistory(data);
+    } catch (error) {
+      console.error('Error fetching records:', error);
+      // Add error handling
+    }
+  };
+
+  // Fetch records on component mount
+  useEffect(() => {
+    fetchProductionHistory();
+  }, []);
 
   const handleExportData = () => {
     const csvContent = [
@@ -119,7 +157,7 @@ export default function EggProductionPage() {
         <Header activeTab="egg-production" />
         <div className="p-6">
           <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">Recent Egg Production</h2>
+            <h2 className="text-2xl font-bold mb-4"></h2>
             <p className="text-gray-500 mb-4">Enter today's egg collection data</p>
             
             {/* Collection Date */}
