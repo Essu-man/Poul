@@ -135,6 +135,7 @@ export default function EggProductionPage() {
         ["Medium", record.medium.crates, record.medium.pieces, calculateTotalEggs(record.medium)],
         ["Large", record.large.crates, record.large.pieces, calculateTotalEggs(record.large)],
         ["Extra Large", record.extraLarge.crates, record.extraLarge.pieces, calculateTotalEggs(record.extraLarge)],
+        ["Jumbo", record.jumbo.crates, record.jumbo.pieces, calculateTotalEggs(record.jumbo)],
       ].map(([category, crates, pieces, total]) =>
         [record.date, category, crates, pieces, total].join(",")
       )).join("\n")
@@ -366,6 +367,43 @@ export default function EggProductionPage() {
                 <CardFooter>
                   <p className="text-sm text-gray-500 w-full text-right">
                     Total: <span className="font-bold">{calculateTotalEggs(eggProduction.extraLarge)}</span> eggs
+                  </p>
+                </CardFooter>
+              </Card>
+              {/* Jumbo Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Jumbo</CardTitle>
+                  <CardDescription>Jumbo sized eggs</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="jumbo-crates">Number of Crates</Label>
+                      <Input
+                        id="jumbo-crates"
+                        type="number"
+                        min="0"
+                        value={eggProduction.jumbo.crates}
+                        onChange={(e) => handleEggInputChange("jumbo", "crates", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="extraLarge-pieces">Number of Pieces</Label>
+                      <Input
+                        id="jumbo-pieces"
+                        type="number"
+                        min="0"
+                        max="29"
+                        value={eggProduction.jumbo.pieces}
+                        onChange={(e) => handleEggInputChange("jumbo", "pieces", e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <p className="text-sm text-gray-500 w-full text-right">
+                    Total: <span className="font-bold">{calculateTotalEggs(eggProduction.jumbo)}</span> eggs
                   </p>
                 </CardFooter>
               </Card>
