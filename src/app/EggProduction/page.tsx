@@ -14,6 +14,8 @@ import { format } from "date-fns";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 
+import { toast } from "sonner";
+
 interface EggProduction {
   date: string;
   peewee: { crates: number; pieces: number };
@@ -37,8 +39,9 @@ export default function EggProductionPage() {
 
   const [productionHistory, setProductionHistory] = useState<EggProduction[]>([]);
 
-  const calculateTotalEggs = (category: { crates: number; pieces: number }) => {
-    return category.crates * 30 + category.pieces;
+  const calculateTotalEggs = (category: { crates: number; pieces: number } | undefined) => {
+    if (!category) return 0;
+    return (category.crates || 0) * 30 + (category.pieces || 0);
   };
 
   const handleEggInputChange = (
@@ -88,6 +91,15 @@ export default function EggProductionPage() {
         throw new Error('Failed to save record');
       }
 
+      // Show success toast
+      toast.success('Production record saved successfully', {
+        icon: "✅",
+        style: {
+          background: '#10B981', // Emerald-500 color
+          color: 'white',
+        },
+      });
+
       // Reset form after saving
       setEggProduction({
         date: format(new Date(), "yyyy-MM-dd"),
@@ -103,7 +115,9 @@ export default function EggProductionPage() {
       fetchProductionHistory();
     } catch (error) {
       console.error('Error saving record:', error);
-      // Add error handling (e.g., toast notification)
+      toast.error('Failed to save record', {
+        icon: "❌",
+      });
     }
   };
 
