@@ -38,6 +38,7 @@ export default function EggProductionPage() {
   });
 
   const [productionHistory, setProductionHistory] = useState<EggProduction[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
 
   const calculateTotalEggs = (category: { crates: number; pieces: number } | undefined) => {
     if (!category) return 0;
@@ -79,6 +80,22 @@ export default function EggProductionPage() {
 
   const handleSaveRecord = async () => {
     try {
+      // Check if record already exists for this date
+      const existingRecord = productionHistory.find(record => record.date === eggProduction.date);
+      
+      if (existingRecord) {
+        toast.error('A record already exists for this date. Please choose a different date or edit the existing record.', {
+          duration: 5000,
+          icon: "⚠️",
+          style: {
+            background: '#FEF3C7', // Amber-50
+            color: '#92400E', // Amber-800
+            border: '1px solid #D97706', // Amber-600
+          },
+        });
+        return;
+      }
+
       const response = await fetch('/api/egg-production', {
         method: 'POST',
         headers: {
@@ -95,7 +112,7 @@ export default function EggProductionPage() {
       toast.success('Production record saved successfully', {
         icon: "✅",
         style: {
-          background: '#10B981', // Emerald-500 color
+          background: '#10B981',
           color: 'white',
         },
       });
@@ -139,6 +156,55 @@ export default function EggProductionPage() {
   useEffect(() => {
     fetchProductionHistory();
   }, []);
+
+  const handleUpdateRecord = async () => {
+    try {
+      const response = await fetch('/api/egg-production', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(eggProduction),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update record');
+      }
+
+      toast.success('Record updated successfully');
+      setIsEditing(false);
+      
+      // Reset form
+      setEggProduction({
+        date: format(new Date(), "yyyy-MM-dd"),
+        peewee: { crates: 0, pieces: 0 },
+        small: { crates: 0, pieces: 0 },
+        medium: { crates: 0, pieces: 0 },
+        large: { crates: 0, pieces: 0 },
+        extraLarge: { crates: 0, pieces: 0 },
+        jumbo: { crates: 0, pieces: 0 }
+      });
+
+      // Refresh the production history
+      fetchProductionHistory();
+    } catch (error) {
+      console.error('Error updating record:', error);
+      toast.error('Failed to update record');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEggProduction({
+      date: format(new Date(), "yyyy-MM-dd"),
+      peewee: { crates: 0, pieces: 0 },
+      small: { crates: 0, pieces: 0 },
+      medium: { crates: 0, pieces: 0 },
+      large: { crates: 0, pieces: 0 },
+      extraLarge: { crates: 0, pieces: 0 },
+      jumbo: { crates: 0, pieces: 0 }
+    });
+  };
 
   const handleExportData = () => {
     const csvContent = [
@@ -445,21 +511,41 @@ export default function EggProductionPage() {
                       </span>
                     </div>
                   </div>
-                </CardContent>
-                <CardFooter className="flex flex-col sm:flex-row gap-2 sm:justify-end">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => window.location.reload()}
-                    className="w-full sm:w-24"
-                  >
-                    Reset
-                  </Button>
-                  <Button 
-                    onClick={handleSaveRecord}
-                    className="w-full sm:w-32 bg-emerald-600 hover:bg-emerald-700"
-                  >
-                    Save Record
-                  </Button>
+pop up                 </CardContent>
+                 <CardFooter className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+                  {isEditing ? (
+                    <>
+                      <Button 
+                        variant="outline" 
+                        onClick={handleCancelEdit}
+                        className="w-full sm:w-24"
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={handleUpdateRecord}
+                        className="w-full sm:w-32 bg-amber-600 hover:bg-amber-700"
+                      >
+                        Update
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => window.location.reload()}
+                        className="w-full sm:w-24"
+                      >
+                        Reset
+                      </Button>
+                      <Button 
+                        onClick={handleSaveRecord}
+                        className="w-full sm:w-32 bg-emerald-600 hover:bg-emerald-700"
+                      >
+                        Save Record
+                      </Button>
+                    </>
+                  )}
                 </CardFooter>
               </Card>
 
@@ -478,6 +564,7 @@ export default function EggProductionPage() {
                         <th className="px-4 py-3 text-right text-sm font-medium text-gray-600">Extra Large</th>
                         <th className="px-4 py-3 text-right text-sm font-medium text-gray-600">Jumbo</th>
                         <th className="px-4 py-3 text-right text-sm font-medium text-gray-600">Total</th>
+                        <th className="px-4 py-3 text-center text-sm font-medium text-gray-600">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
