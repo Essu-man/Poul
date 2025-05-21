@@ -2,6 +2,7 @@
 
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
+import { Pencil, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -204,6 +205,43 @@ export default function EggProductionPage() {
       extraLarge: { crates: 0, pieces: 0 },
       jumbo: { crates: 0, pieces: 0 }
     });
+  };
+
+  const handleEditRecord = (record: EggProduction) => {
+    setEggProduction(record);
+    setIsEditing(true);
+  };
+
+  const handleDeleteRecord = async (date: string) => {
+    if (!confirm('Are you sure you want to delete this record?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/egg-production?date=${date}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete record');
+      }
+
+      toast.success('Record deleted successfully', {
+        icon: "✅",
+        style: {
+          background: '#10B981',
+          color: 'white',
+        },
+      });
+
+      // Refresh the production history
+      fetchProductionHistory();
+    } catch (error) {
+      console.error('Error deleting record:', error);
+      toast.error('Failed to delete record', {
+        icon: "❌",
+      });
+    }
   };
 
   const handleExportData = () => {
@@ -584,6 +622,26 @@ pop up                 </CardContent>
                               calculateTotalEggs(record.large) +
                               calculateTotalEggs(record.extraLarge) +
                               calculateTotalEggs(record.jumbo)}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                            <div className="flex justify-center space-x-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handleEditRecord(record)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => handleDeleteRecord(record.date)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))}
