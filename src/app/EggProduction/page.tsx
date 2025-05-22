@@ -848,7 +848,7 @@ export default function EggProductionPage() {
           </div>
         </div>
       </div>
-    );
+
     {/* Add the ConfirmationDialogs here, just before the closing div */}
     <ConfirmationDialog
       isOpen={isDeleteDialogOpen}
@@ -868,8 +868,3 @@ export default function EggProductionPage() {
   </div>
 );
 }
-
-
-
-
- 
