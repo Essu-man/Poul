@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Sidebar } from "@/components/Sidebar";
@@ -16,6 +17,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 
 import { toast } from "sonner";
+import { ConfirmationDialog } from "@/components/ConfirmationDialog";
 
 interface EggProduction {
   date: string;
@@ -41,6 +43,66 @@ export default function EggProductionPage() {
   const [productionHistory, setProductionHistory] = useState<EggProduction[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<EggProduction | null>(null);
+    // Add these handlers before the handleExportData function
+    const handleDeleteClick = (record: EggProduction) => {
+      setSelectedRecord(record);
+      setIsDeleteDialogOpen(true);
+    };
+    
+    const handleEditClick = (record: EggProduction) => {
+      setSelectedRecord(record);
+      setIsEditDialogOpen(true);
+    };
+    
+    const handleDeleteConfirm = async () => {
+      if (selectedRecord) {
+        await handleDeleteRecord(selectedRecord.date);
+        setIsDeleteDialogOpen(false);
+        setSelectedRecord(null);
+        await fetchProductionHistory(); // Refresh the list after deletion
+      }
+    };
+    
+    const handleEditConfirm = async () => {
+      if (selectedRecord) {
+        await handleUpdateRecord();
+        setIsEditDialogOpen(false);
+        setSelectedRecord(null);
+        await fetchProductionHistory(); // Refresh the list after edit
+      }
+    };
+
+  const fetchProductionHistory = async () => {
+    try {
+      const response = await fetch('/api/egg-production');
+      if (!response.ok) {
+        throw new Error('Failed to fetch records');
+      }
+      const data = await response.json();
+      console.log('Fetched data:', data);
+      if (Array.isArray(data)) {
+        setProductionHistory(data.map(record => ({
+          ...record,
+          date: record.date,
+          peewee: record.peewee || { crates: 0, pieces: 0 },
+          small: record.small || { crates: 0, pieces: 0 },
+          medium: record.medium || { crates: 0, pieces: 0 },
+          large: record.large || { crates: 0, pieces: 0 },
+          extraLarge: record.extraLarge || { crates: 0, pieces: 0 },
+          jumbo: record.jumbo || { crates: 0, pieces: 0 }
+        })));
+      } else {
+        console.error('Invalid data format received:', data);
+        toast.error('Error loading production history');
+      }
+    } catch (error) {
+      console.error('Error fetching records:', error);
+      toast.error('Failed to fetch production records');
+    }
+  };
 
   const calculateTotalEggs = (category: { crates: number; pieces: number } | undefined) => {
     if (!category) return 0;
@@ -140,35 +202,6 @@ export default function EggProductionPage() {
     }
   };
 
-  const fetchProductionHistory = async () => {
-    try {
-      const response = await fetch('/api/egg-production');
-      if (!response.ok) {
-        throw new Error('Failed to fetch records');
-      }
-      const data = await response.json();
-      console.log('Fetched data:', data); // Add this to debug
-      if (Array.isArray(data)) {
-        setProductionHistory(data.map(record => ({
-          ...record,
-          date: record.date,
-          peewee: record.peewee || { crates: 0, pieces: 0 },
-          small: record.small || { crates: 0, pieces: 0 },
-          medium: record.medium || { crates: 0, pieces: 0 },
-          large: record.large || { crates: 0, pieces: 0 },
-          extraLarge: record.extraLarge || { crates: 0, pieces: 0 },
-          jumbo: record.jumbo || { crates: 0, pieces: 0 }
-        })));
-      } else {
-        console.error('Invalid data format received:', data);
-        toast.error('Error loading production history');
-      }
-    } catch (error) {
-      console.error('Error fetching records:', error);
-      toast.error('Failed to fetch production records');
-    }
-  };
-
   // Fetch records on component mount
   useEffect(() => {
     fetchProductionHistory();
@@ -230,19 +263,15 @@ export default function EggProductionPage() {
   };
 
   const handleDeleteRecord = async (date: string) => {
-    if (!confirm('Are you sure you want to delete this record?')) {
-      return;
-    }
-
     try {
       const response = await fetch(`/api/egg-production?date=${date}`, {
         method: 'DELETE',
       });
-
+  
       if (!response.ok) {
         throw new Error('Failed to delete record');
       }
-
+  
       toast.success('Record deleted successfully', {
         icon: "✅",
         style: {
@@ -250,7 +279,7 @@ export default function EggProductionPage() {
           color: 'white',
         },
       });
-
+  
       // Refresh the production history
       fetchProductionHistory();
     } catch (error) {
@@ -288,12 +317,11 @@ export default function EggProductionPage() {
   return (
     <div className="flex h-screen bg-gray-20">
       <Sidebar activeTab="egg-production" />
-
       <div className="flex-1 overflow-auto">
         <Header activeTab="egg-production" />
         <div className="p-6">
           <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-4"></h2>
+            <h2 className="text-2xl font-bold mb-4">Egg Production Records</h2>
             <p className="text-gray-500 mb-4">Enter today's egg collection data</p>
             
             {/* Collection Date */}
@@ -820,6 +848,28 @@ export default function EggProductionPage() {
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+    {/* Add the ConfirmationDialogs here, just before the closing div */}
+    <ConfirmationDialog
+      isOpen={isDeleteDialogOpen}
+      onClose={() => setIsDeleteDialogOpen(false)}
+      onConfirm={handleDeleteConfirm}
+      title="Delete Record"
+      description="Are you sure you want to delete this record? This action cannot be undone."
+    />
+    
+    <ConfirmationDialog
+      isOpen={isEditDialogOpen}
+      onClose={() => setIsEditDialogOpen(false)}
+      onConfirm={handleEditConfirm}
+      title="Update Record"
+      description="Are you sure you want to update this record?"
+    />
+  </div>
+);
 }
+
+
+
+
+ 
