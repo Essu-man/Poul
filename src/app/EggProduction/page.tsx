@@ -147,10 +147,25 @@ export default function EggProductionPage() {
         throw new Error('Failed to fetch records');
       }
       const data = await response.json();
-      setProductionHistory(data);
+      console.log('Fetched data:', data); // Add this to debug
+      if (Array.isArray(data)) {
+        setProductionHistory(data.map(record => ({
+          ...record,
+          date: record.date,
+          peewee: record.peewee || { crates: 0, pieces: 0 },
+          small: record.small || { crates: 0, pieces: 0 },
+          medium: record.medium || { crates: 0, pieces: 0 },
+          large: record.large || { crates: 0, pieces: 0 },
+          extraLarge: record.extraLarge || { crates: 0, pieces: 0 },
+          jumbo: record.jumbo || { crates: 0, pieces: 0 }
+        })));
+      } else {
+        console.error('Invalid data format received:', data);
+        toast.error('Error loading production history');
+      }
     } catch (error) {
       console.error('Error fetching records:', error);
-      // Add error handling
+      toast.error('Failed to fetch production records');
     }
   };
 
