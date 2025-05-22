@@ -40,6 +40,7 @@ export default function EggProductionPage() {
 
   const [productionHistory, setProductionHistory] = useState<EggProduction[]>([]);
   const [isEditing, setIsEditing] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const calculateTotalEggs = (category: { crates: number; pieces: number } | undefined) => {
     if (!category) return 0;
@@ -174,6 +175,7 @@ export default function EggProductionPage() {
 
       toast.success('Record updated successfully');
       setIsEditing(false);
+      setIsDialogOpen(false); 
       
       // Reset form
       setEggProduction({
@@ -545,44 +547,27 @@ export default function EggProductionPage() {
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Grand Total:</span>
                       <span className="font-bold text-lg text-emerald-600">
-                        {calculateTotalCrates() * 30 + calculateTotalPieces()} eggs
+                        {Object.values(eggProduction)
+                          .reduce((acc, category) => {
+                            if (typeof category === "object" && category !== null) {
+                              return acc + calculateTotalEggs(category);
+                            }
+                            return acc;
+                          }, 0)}
                       </span>
                     </div>
                   </div>
-pop up                 </CardContent>
-                 <CardFooter className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+                </CardContent>
+                <CardFooter className="flex justify-end space-x-4">
                   {isEditing ? (
                     <>
-                      <Button 
-                        variant="outline" 
-                        onClick={handleCancelEdit}
-                        className="w-full sm:w-24"
-                      >
+                      <Button variant="outline" onClick={handleCancelEdit}>
                         Cancel
                       </Button>
-                      <Button 
-                        onClick={handleUpdateRecord}
-                        className="w-full sm:w-32 bg-amber-600 hover:bg-amber-700"
-                      >
-                        Update
-                      </Button>
+                      <Button onClick={handleUpdateRecord}>Update Record</Button>
                     </>
                   ) : (
-                    <>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => window.location.reload()}
-                        className="w-full sm:w-24"
-                      >
-                        Reset
-                      </Button>
-                      <Button 
-                        onClick={handleSaveRecord}
-                        className="w-full sm:w-32 bg-emerald-600 hover:bg-emerald-700"
-                      >
-                        Save Record
-                      </Button>
-                    </>
+                    <Button onClick={handleSaveRecord}>Save Record</Button>
                   )}
                 </CardFooter>
               </Card>
@@ -625,14 +610,181 @@ pop up                 </CardContent>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                             <div className="flex justify-center space-x-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => handleEditRecord(record)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
+                              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                                <DialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => handleEditRecord(record)}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-2xl">
+                                  <DialogHeader>
+                                    <DialogTitle>Edit Egg Production Record</DialogTitle>
+                                    <DialogDescription>
+                                      Edit production data for {format(new Date(record.date), "MMMM dd, yyyy")}
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                  
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+                                    {/* Peewee */}
+                                    <div className="space-y-2">
+                                      <h3 className="font-semibold">Peewee</h3>
+                                      <div className="space-y-1">
+                                        <Label>Crates</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          value={eggProduction.peewee.crates}
+                                          onChange={(e) => handleEggInputChange("peewee", "crates", e.target.value)}
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label>Pieces</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          max="29"
+                                          value={eggProduction.peewee.pieces}
+                                          onChange={(e) => handleEggInputChange("peewee", "pieces", e.target.value)}
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* Small */}
+                                    <div className="space-y-2">
+                                      <h3 className="font-semibold">Small</h3>
+                                      <div className="space-y-1">
+                                        <Label>Crates</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          value={eggProduction.small.crates}
+                                          onChange={(e) => handleEggInputChange("small", "crates", e.target.value)}
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label>Pieces</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          max="29"
+                                          value={eggProduction.small.pieces}
+                                          onChange={(e) => handleEggInputChange("small", "pieces", e.target.value)}
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* Medium */}
+                                    <div className="space-y-2">
+                                      <h3 className="font-semibold">Medium</h3>
+                                      <div className="space-y-1">
+                                        <Label>Crates</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          value={eggProduction.medium.crates}
+                                          onChange={(e) => handleEggInputChange("medium", "crates", e.target.value)}
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label>Pieces</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          max="29"
+                                          value={eggProduction.medium.pieces}
+                                          onChange={(e) => handleEggInputChange("medium", "pieces", e.target.value)}
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* Large */}
+                                    <div className="space-y-2">
+                                      <h3 className="font-semibold">Large</h3>
+                                      <div className="space-y-1">
+                                        <Label>Crates</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          value={eggProduction.large.crates}
+                                          onChange={(e) => handleEggInputChange("large", "crates", e.target.value)}
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label>Pieces</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          max="29"
+                                          value={eggProduction.large.pieces}
+                                          onChange={(e) => handleEggInputChange("large", "pieces", e.target.value)}
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* Extra Large */}
+                                    <div className="space-y-2">
+                                      <h3 className="font-semibold">Extra Large</h3>
+                                      <div className="space-y-1">
+                                        <Label>Crates</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          value={eggProduction.extraLarge.crates}
+                                          onChange={(e) => handleEggInputChange("extraLarge", "crates", e.target.value)}
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label>Pieces</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          max="29"
+                                          value={eggProduction.extraLarge.pieces}
+                                          onChange={(e) => handleEggInputChange("extraLarge", "pieces", e.target.value)}
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* Jumbo */}
+                                    <div className="space-y-2">
+                                      <h3 className="font-semibold">Jumbo</h3>
+                                      <div className="space-y-1">
+                                        <Label>Crates</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          value={eggProduction.jumbo.crates}
+                                          onChange={(e) => handleEggInputChange("jumbo", "crates", e.target.value)}
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label>Pieces</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          max="29"
+                                          value={eggProduction.jumbo.pieces}
+                                          onChange={(e) => handleEggInputChange("jumbo", "pieces", e.target.value)}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <DialogFooter>
+                                    <Button variant="outline" onClick={handleCancelEdit}>
+                                      Cancel
+                                    </Button>
+                                    <Button onClick={handleUpdateRecord} className="bg-amber-600 hover:bg-amber-700">
+                                      Update Record
+                                    </Button>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
                               <Button
                                 variant="ghost"
                                 size="icon"
