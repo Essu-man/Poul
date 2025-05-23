@@ -71,16 +71,17 @@ export default function Home() {
         email: formData.email,
         password: formData.password,
       });
-
+  
       if (error) throw error;
-
+  
+      // Show success message
       toast.success("Login successful! Welcome back!");
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Navigate to dashboard immediately after successful authentication
       router.push("/Dashboard");
     } catch (error: any) {
       toast.error(error.message);
-    } finally {
-      setIsLoginLoading(false);
+      setIsLoginLoading(false); // Only reset loading state on error
     }
   };
 

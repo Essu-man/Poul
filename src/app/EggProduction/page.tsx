@@ -849,7 +849,6 @@ export default function EggProductionPage() {
         </div>
       </div>
 
-    {/* Add the ConfirmationDialogs here, just before the closing div */}
     <ConfirmationDialog
       isOpen={isDeleteDialogOpen}
       onClose={() => setIsDeleteDialogOpen(false)}
