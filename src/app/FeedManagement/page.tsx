@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import React, { useState } from "react";
 import Link from "next/link";
+import {Sidebar} from "@/components/Sidebar";
 
 interface FeedEntry {
   date: string;
@@ -49,57 +50,7 @@ export default function FeedManagementPage() {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <div className="w-64 bg-white shadow-md z-10 flex flex-col">
-        <div className="p-4 border-b">
-          <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center text-white">
-              <i className="fas fa-feather-alt"></i>
-            </div>
-            <div>
-              <h2 className="font-bold text-lg">Poultry Farm</h2>
-              <p className="text-xs text-gray-500">Management System</p>
-            </div>
-          </div>
-        </div>
-        <nav className="flex-1 p-4">
-          <ul className="space-y-2">
-            <li>
-              <Link href="/" className="flex items-center space-x-3 text-gray-700 p-2 rounded-lg hover:bg-gray-100">
-                <span>Dashboard</span>
-              </Link>
-            </li>
-            <li>
-              <Link href="/EggProduction" className="flex items-center space-x-3 text-gray-700 p-2 rounded-lg hover:bg-gray-100">
-                <span>Egg Production</span>
-              </Link>
-            </li>
-            <li>
-              <Link href="/FeedManagement" className="flex items-center space-x-3 text-gray-700 p-2 rounded-lg bg-gray-100">
-                <span>Feed Management</span>
-              </Link>
-            </li>
-            <li>
-              <Link href="/MedicationTracking" className="flex items-center space-x-3 text-gray-700 p-2 rounded-lg hover:bg-gray-100">
-                <span>Medication</span>
-              </Link>
-            </li>
-          </ul>
-        </nav>
-        <div className="p-4 border-t">
-          <div className="flex items-center mt-4">
-            <Avatar className="cursor-pointer">
-              <AvatarImage src="#" />
-              <AvatarFallback>JD</AvatarFallback>
-            </Avatar>
-            <div className="ml-2">
-              <p className="text-sm font-medium">John Doe</p>
-              <p className="text-xs text-gray-500">Farm Manager</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <Sidebar activeTab="feed-management" />
       {/* Main Content */}
       <div className="flex-1 overflow-auto p-6">
         <div className="flex justify-between items-center mb-6">

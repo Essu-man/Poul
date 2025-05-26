@@ -97,7 +97,10 @@ export function Sidebar({ activeTab }: SidebarProps) {
         fixed lg:sticky top-0 left-0 h-screen
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         transition-all duration-300 ease-in-out
-        w-64 bg-white dark:bg-gray-800 shadow-lg z-40 flex flex-col
+        w-64 <div className="bg-white dark:bg-gray-800 text-black dark:text-white">
+          {/* Sidebar content */}
+        </div>
+        shadow-lg z-40 flex flex-col
         ${isScrolled ? 'shadow-xl' : ''}
       `}>
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
