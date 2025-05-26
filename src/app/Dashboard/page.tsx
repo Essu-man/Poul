@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import * as echarts from "echarts";
 import { useEffect, useState } from "react";
 
@@ -42,19 +42,40 @@ interface TaskItemProps {
   color: string;
 }
 
+interface DashboardStats {
+  eggProduction: {
+    total: number;
+    change: string;
+    trend: "up" | "down";
+  };
+  feedConsumption: {
+    total: number;
+    change: string;
+    trend: "up" | "down";
+  };
+  activeMedications: {
+    total: number;
+    nextCompletion: string;
+  };
+  totalBirds: {
+    total: number;
+    status: string;
+  };
+}
+
 export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
-
-  const stats = {
+  const [productionData, setProductionData] = useState<any[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({
     eggProduction: {
       total: 0,
-      change: "+12%",
-      trend: "up" as "up" | "down"  
+      change: "+0%",
+      trend: "up"
     },
     feedConsumption: {
       total: 0,
-      change: "-5%",
-      trend: "down" as "up" | "down"
+      change: "+0%",
+      trend: "up"
     },
     activeMedications: {
       total: 1,
@@ -64,44 +85,117 @@ export default function Dashboard() {
       total: 2450,
       status: "Healthy population"
     }
+  });
+  const [tasks] = useState<TaskItemProps[]>([
+    {
+      name: "Feed Stock Check",
+      time: "9:00 AM",
+      priority: "High",
+      icon: "box",
+      color: "blue"
+    },
+    {
+      name: "Medication Schedule",
+      time: "10:30 AM",
+      priority: "Medium",
+      icon: "pills",
+      color: "purple"
+    },
+    {
+      name: "Egg Collection",
+      time: "2:00 PM",
+      priority: "High",
+      icon: "egg",
+      color: "yellow"
+    }
+  ]);
+
+  const fetchEggProduction = async () => {
+    try {
+      const response = await fetch('/api/egg-production');
+      if (!response.ok) throw new Error('Failed to fetch egg production data');
+      const data = await response.json();
+      console.log('Fetched production data:', data); // Debug log
+      setProductionData(data);
+      
+      // Calculate total eggs for today
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const todayRecord = data.find((record: any) => record.date === today);
+      console.log('Today\'s record:', todayRecord); // Debug log
+      
+      const todayTotal = todayRecord ? calculateTotalEggs(todayRecord) : 0;
+      console.log('Calculated total eggs:', todayTotal); // Debug log
+      
+      // Calculate change percentage from yesterday
+      const yesterday = format(addDays(new Date(), -1), 'yyyy-MM-dd');
+      const yesterdayRecord = data.find((record: any) => record.date === yesterday);
+      const yesterdayTotal = yesterdayRecord ? calculateTotalEggs(yesterdayRecord) : 0;
+      
+      const changePercentage = yesterdayTotal ? ((todayTotal - yesterdayTotal) / yesterdayTotal * 100).toFixed(1) : '0';
+      
+      setStats(prev => ({
+        ...prev,
+        eggProduction: {
+          total: todayTotal,
+          change: `${changePercentage}%`,
+          trend: Number(changePercentage) >= 0 ? 'up' : 'down'
+        }
+      }));
+      
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching egg production:', error);
+      setIsLoading(false);
+    }
   };
 
-  const inventory = [
-    { name: "Layer Feed", level: 75 },
-    { name: "Starter Feed", level: 45 },
-    { name: "Vitamins", level: 90 },
-    { name: "Egg Cartons", level: 30 }
-  ];
+  const calculateTotalEggs = (record: any) => {
+    if (!record) return 0;
+    
+    // Define egg size categories based on the actual data structure
+    const categories = [
+      'peewee',
+      'small',
+      'medium',
+      'large',
+      'extraLarge',
+      'jumbo'
+    ];
+    
+    // Calculate total eggs for each category using the nested structure
+    return categories.reduce((total, category) => {
+      const categoryData = record[category];
+      if (!categoryData) return total;
+      
+      const crates = categoryData.crates || 0;
+      const pieces = categoryData.pieces || 0;
+      return total + (crates * 30) + pieces;
+    }, 0);
+  };
 
-  const tasks = [
-    { name: "Coop Cleaning", time: "Tomorrow, 9:00 AM", priority: "High" as "High", icon: "calendar-check", color: "blue" },
-    { name: "Vaccination", time: "Apr 12, 8:00 AM", priority: "Medium" as "Medium", icon: "syringe", color: "purple" },
-    { name: "Feed Delivery", time: "Apr 15, 10:30 AM", priority: "Medium" as "Medium", icon: "truck", color: "amber" },
-    { name: "Monthly Inspection", time: "Apr 30, 1:00 PM", priority: "Low" as "Low", icon: "clipboard-check", color: "green" }
-  ] as const;
-
-  const activities = [
-    { title: "Egg Collection Completed", description: "425 eggs collected from Coop A", time: "Today, 8:30 AM", icon: "egg", color: "blue" },
-    { title: "Feed Distributed", description: "250kg of layer feed distributed", time: "Today, 7:15 AM", icon: "wheat", color: "amber" },
-    { title: "Medication Administered", description: "Vitamin supplement added to water", time: "Today, 6:45 AM", icon: "pills", color: "purple" },
-    { title: "Health Check Completed", description: "All birds in good condition", time: "Yesterday, 5:30 PM", icon: "check-circle", color: "green" }
-  ];
-
-  // Initialize chart
   useEffect(() => {
+    fetchEggProduction();
+  }, []);
+
+  // Modify the chart initialization to use real data
+  useEffect(() => {
+    if (!productionData.length) return;
+
     const chartDom = document.getElementById("productionChart");
     if (chartDom) {
       const myChart = echarts.init(chartDom);
-      const dates = Array.from({ length: 7 }, (_, i) => {
+      
+      // Get last 7 days of data
+      const last7Days = Array.from({ length: 7 }, (_, i) => {
         const date = new Date();
         date.setDate(date.getDate() - 6 + i);
-        return format(date, "MMM dd");
+        return format(date, "yyyy-MM-dd");
       });
 
-      const eggData = Array.from(
-        { length: 7 },
-        () => Math.floor(Math.random() * 500) + 300
-      );
+      const eggData = last7Days.map(date => {
+        const record = productionData.find(r => r.date === date);
+        return record ? calculateTotalEggs(record) : 0;
+      });
 
       const feedData = Array.from(
         { length: 7 },
@@ -127,10 +221,14 @@ export default function Dashboard() {
         },
         xAxis: {
           type: "category",
-          data: dates,
+          data: last7Days.map(date => format(new Date(date), "MMM dd")),
         },
         yAxis: {
           type: "value",
+          name: "Count",
+          axisLabel: {
+            formatter: "{value}"
+          }
         },
         series: [
           {
@@ -147,10 +245,11 @@ export default function Dashboard() {
           },
         ],
       };
+      
       myChart.setOption(option);
       return () => myChart.dispose();
     }
-  }, []);
+  }, [productionData]);
 
   if (isLoading) {
     return (
@@ -279,7 +378,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {tasks.map((task, index) => (
+                {tasks.map((task: TaskItemProps, index: number) => (
                   <div key={`task-${index}`}>
                     <TaskItem {...task} />
                     {index < tasks.length - 1 && <Separator />}
