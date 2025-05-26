@@ -15,3 +15,4 @@ export const eggProduction = pgTable('egg_production', {
   jumbo_crates: integer('jumbo_crates').notNull().default(0),
   jumbo_pieces: integer('jumbo_pieces').notNull().default(0),
 });
+
