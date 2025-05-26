@@ -6,7 +6,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { DatePicker } from "@/components/ui/date-picker";
+import { CustomDatePicker } from "@/components/ui/custom-date-picker";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -327,15 +327,13 @@ export default function EggProductionPage() {
             <div className="mb-6">
               <Label>Collection Date</Label>
               <div className="w-[200px]">
-                <DatePicker
+                <CustomDatePicker
                   selectedDate={new Date(eggProduction.date)}
                   onDateChange={(date) => {
-                    if (date) {
-                      setEggProduction(prev => ({
-                        ...prev,
-                        date: format(date, "yyyy-MM-dd")
-                      }));
-                    }
+                    setEggProduction(prev => ({
+                      ...prev,
+                      date: format(date, "yyyy-MM-dd")
+                    }));
                   }}
                 />
               </div>
