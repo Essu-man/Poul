@@ -8,6 +8,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { format, addDays } from "date-fns";
 import * as echarts from "echarts";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useEffect, useState } from "react";
 
 
@@ -86,29 +91,7 @@ export default function Dashboard() {
       status: "Healthy population"
     }
   });
-  const [tasks] = useState<TaskItemProps[]>([
-    {
-      name: "Feed Stock Check",
-      time: "9:00 AM",
-      priority: "High",
-      icon: "box",
-      color: "blue"
-    },
-    {
-      name: "Medication Schedule",
-      time: "10:30 AM",
-      priority: "Medium",
-      icon: "pills",
-      color: "purple"
-    },
-    {
-      name: "Egg Collection",
-      time: "2:00 PM",
-      priority: "High",
-      icon: "egg",
-      color: "yellow"
-    }
-  ]);
+  const [tasks, setTasks] = useState<TaskItemProps[]>([]);
 
   const fetchEggProduction = async () => {
     try {
@@ -313,7 +296,7 @@ export default function Dashboard() {
                       {index < tasks.length - 1 && <Separator />}
                     </div>
                   ))}
-                  <AddTaskDialog />
+                  <AddTaskDialog onTaskCreated={(task) => setTasks(prev => [...prev, task])} />
                 </div>
               </CardContent>
             </Card>
@@ -384,7 +367,7 @@ export default function Dashboard() {
                     {index < tasks.length - 1 && <Separator />}
                   </div>
                 ))}
-                <AddTaskDialog />
+                <AddTaskDialog onTaskCreated={(task) => setTasks(prev => [...prev, task])} />
               </div>
             </CardContent>
           </Card>
@@ -459,11 +442,7 @@ function InventoryItem({ name, level }: InventoryItemProps) {
 
 // Component for task items
 // Add these imports at the top
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+
 
 function TaskItem({ name, time, priority, icon, color }: TaskItemProps) {
   const getPriorityColor = (priority: "High" | "Medium" | "Low") => {
@@ -493,10 +472,45 @@ function TaskItem({ name, time, priority, icon, color }: TaskItemProps) {
   );
 }
 
-// Add the AddTaskDialog component
-function AddTaskDialog() {
+// Update the AddTaskDialog component
+function AddTaskDialog({ onTaskCreated }: { onTaskCreated: (task: TaskItemProps) => void }) {
+  const [open, setOpen] = useState(false);
+  const [newTask, setNewTask] = useState<TaskItemProps>({
+    name: '',
+    time: '',
+    priority: 'Medium',
+    icon: 'calendar',
+    color: 'blue',
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTask),
+      });
+
+      if (!response.ok) throw new Error('Failed to create task');
+
+      const savedTask = await response.json();
+      onTaskCreated(savedTask); // Call the parent function to update the task list
+      setOpen(false);
+      setNewTask({
+        name: '',
+        time: '',
+        priority: 'Medium',
+        icon: 'calendar',
+        color: 'blue',
+      });
+    } catch (error) {
+      console.error('Error creating task:', error);
+    }
+  };
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" className="w-full bg-black text-white hover:bg-black/90">
           <i className="fas fa-plus mr-2"></i>
@@ -508,53 +522,50 @@ function AddTaskDialog() {
           <DialogTitle>Add New Task</DialogTitle>
           <DialogDescription>Create a new task for farm management system.</DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
           <div className="grid gap-2">
             <label htmlFor="task-name" className="text-sm font-medium">Task Name</label>
-            <Input id="task-name" placeholder="Enter task name" />
-          </div>
-          <div className="grid gap-2">
-            <label htmlFor="description" className="text-sm font-medium">Description</label>
-            <Textarea id="description" placeholder="Enter task description" />
+            <Input
+              id="task-name"
+              value={newTask.name}
+              onChange={(e) => setNewTask((prev) => ({ ...prev, name: e.target.value }))}
+              placeholder="Enter task name"
+              required
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <label htmlFor="date" className="text-sm font-medium">Date</label>
-              <Input id="date" type="date" />
+              <label htmlFor="time" className="text-sm font-medium">Time</label>
+              <Input
+                id="time"
+                type="time"
+                value={newTask.time}
+                onChange={(e) => setNewTask((prev) => ({ ...prev, time: e.target.value }))}
+                required
+              />
             </div>
             <div className="grid gap-2">
-              <label htmlFor="time" className="text-sm font-medium">Time</label>
-              <Input id="time" type="time" />
+              <label htmlFor="priority" className="text-sm font-medium">Priority Level</label>
+              <Select
+                value={newTask.priority}
+                onValueChange={(value: "High" | "Medium" | "Low") =>
+                  setNewTask((prev) => ({ ...prev, priority: value }))
+                }
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="Low">Low</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
-          <div className="grid gap-2">
-            <label htmlFor="priority" className="text-sm font-medium">Priority Level</label>
-            <Select>
-              <SelectTrigger>
-                <SelectValue placeholder="Select priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-2">
-            <label htmlFor="assignee" className="text-sm font-medium">Assignee</label>
-            <Input id="assignee" placeholder="Select assignee" />
-          </div>
-          <div className="grid gap-2">
-            <label htmlFor="notes" className="text-sm font-medium">Notes</label>
-            <Input id="notes" placeholder="Add additional notes" />
-          </div>
-        </div>
-        <div className="flex justify-end gap-3">
-          <DialogTrigger asChild>
-            <Button variant="outline">Cancel</Button>
-          </DialogTrigger>
-          <Button type="submit">Save Task</Button>
-        </div>
+          <Button type="submit" className="w-full">Create Task</Button>
+        </form>
       </DialogContent>
     </Dialog>
   );

@@ -1,4 +1,4 @@
-import { date, integer, pgTable } from 'drizzle-orm/pg-core';
+import { date, integer, text, timestamp, pgTable } from 'drizzle-orm/pg-core';
 
 export const eggProduction = pgTable('egg_production', {
   date: date('date').primaryKey(),
@@ -16,3 +16,13 @@ export const eggProduction = pgTable('egg_production', {
   jumbo_pieces: integer('jumbo_pieces').notNull().default(0),
 });
 
+export const tasks = pgTable('tasks', {
+  id: integer('id').primaryKey(),
+  name: text('name').notNull(),
+  time: text('time').notNull(),
+  priority: text('priority').notNull(),
+  icon: text('icon').notNull(),
+  color: text('color').notNull(),
+  completed: integer('completed').notNull().default(0),
+  created_at: timestamp('created_at').defaultNow()
+});
