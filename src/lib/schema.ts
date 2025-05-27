@@ -1,4 +1,4 @@
-import { date, integer, text, timestamp, pgTable } from 'drizzle-orm/pg-core';
+import { date, integer, serial, text, timestamp, pgTable } from 'drizzle-orm/pg-core';
 
 export const eggProduction = pgTable('egg_production', {
   date: date('date').primaryKey(),
@@ -17,7 +17,7 @@ export const eggProduction = pgTable('egg_production', {
 });
 
 export const tasks = pgTable('tasks', {
-  id: integer('id').primaryKey(),
+  id: serial('id').primaryKey(), // <-- use serial for auto-incrementing PK
   name: text('name').notNull(),
   time: text('time').notNull(),
   priority: text('priority').notNull(),
