@@ -40,11 +40,13 @@ interface InventoryItemProps {
 }
 
 interface TaskItemProps {
+  id?: number;
   name: string;
   time: string;
   priority: "High" | "Medium" | "Low";
   icon: string;
   color: string;
+  created_at?: string;
 }
 
 interface DashboardStats {
@@ -92,6 +94,13 @@ export default function Dashboard() {
     }
   });
   const [tasks, setTasks] = useState<TaskItemProps[]>([]);
+  const [newTask, setNewTask] = useState<TaskItemProps>({
+    name: '',
+    time: '',
+    priority: 'Medium',
+    icon: 'calendar',
+    color: 'blue',
+  });
 
   const fetchEggProduction = async () => {
     try {
@@ -233,6 +242,27 @@ export default function Dashboard() {
       return () => myChart.dispose();
     }
   }, [productionData]);
+
+  // Add new task
+  const handleAddTask = async () => {
+    const res = await fetch("/api/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newTask),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      setTasks((prev) => [created, ...prev]);
+      setNewTask({ name: "", time: "", priority: "Medium", icon: "calendar", color: "blue" });
+    }
+  };
+
+  useEffect(() => {
+    fetch("/api/tasks")
+      .then(res => res.json())
+      .then(setTasks)
+      .catch(err => console.error("Failed to fetch tasks:", err));
+  }, []);
 
   if (isLoading) {
     return (
@@ -495,7 +525,7 @@ function AddTaskDialog({ onTaskCreated }: { onTaskCreated: (task: TaskItemProps)
       if (!response.ok) throw new Error('Failed to create task');
 
       const savedTask = await response.json();
-      onTaskCreated(savedTask); // Call the parent function to update the task list
+      onTaskCreated(savedTask);
       setOpen(false);
       setNewTask({
         name: '',
@@ -560,6 +590,50 @@ function AddTaskDialog({ onTaskCreated }: { onTaskCreated: (task: TaskItemProps)
                   <SelectItem value="High">High</SelectItem>
                   <SelectItem value="Medium">Medium</SelectItem>
                   <SelectItem value="Low">Low</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <label htmlFor="icon" className="text-sm font-medium">Icon</label>
+              <Select
+                value={newTask.icon}
+                onValueChange={(value: string) =>
+                  setNewTask((prev) => ({ ...prev, icon: value }))
+                }
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select icon" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="calendar">Calendar</SelectItem>
+                  <SelectItem value="check">Check</SelectItem>
+                  <SelectItem value="bell">Bell</SelectItem>
+                  <SelectItem value="star">Star</SelectItem>
+                  {/* Add more icons as needed */}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="color" className="text-sm font-medium">Color</label>
+              <Select
+                value={newTask.color}
+                onValueChange={(value: string) =>
+                  setNewTask((prev) => ({ ...prev, color: value }))
+                }
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select color" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="blue">Blue</SelectItem>
+                  <SelectItem value="red">Red</SelectItem>
+                  <SelectItem value="green">Green</SelectItem>
+                  <SelectItem value="amber">Amber</SelectItem>
+                  {/* Add more colors as needed */}
                 </SelectContent>
               </Select>
             </div>

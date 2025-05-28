@@ -17,7 +17,7 @@ export const eggProduction = pgTable('egg_production', {
 });
 
 export const tasks = pgTable('tasks', {
-  id: serial('id').primaryKey(), // <-- use serial for auto-incrementing PK
+  id: serial('id').primaryKey(),
   name: text('name').notNull(),
   time: text('time').notNull(),
   priority: text('priority').notNull(),
