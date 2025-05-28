@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,17 +11,10 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 
 export default function Home() {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
   const [isLoginLoading, setIsLoginLoading] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);0
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, []);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -40,7 +33,7 @@ export default function Home() {
   const handleSignUp = async () => {
     if (formData.password !== formData.confirmPassword) {
       toast.error("Passwords do not match!");
-      return;
+      return; // Prevent sign up if passwords don't match
     }
 
     try {
@@ -56,7 +49,8 @@ export default function Home() {
 
       if (error) throw error;
 
-      toast.success("Sign up successful! Please check your email for verification.");
+      // Show a popup for successful signup and verification email sent
+      toast.success("Sign up successful! Verification email sent.");
       setShowSignUp(false);
     } catch (error: any) {
       toast.error(error.message);
@@ -65,23 +59,20 @@ export default function Home() {
 
   const handleLogin = async () => {
     setIsLoginLoading(true);
-    
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       });
-  
+
       if (error) throw error;
-  
-      // Show success message
+
       toast.success("Login successful! Welcome back!");
-      
-      // Navigate to dashboard immediately after successful authentication
       router.push("/Dashboard");
     } catch (error: any) {
       toast.error(error.message);
-      setIsLoginLoading(false); // Only reset loading state on error
+      setIsLoginLoading(false);
     }
   };
 
