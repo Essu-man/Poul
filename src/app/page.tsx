@@ -23,28 +23,58 @@ export default function Home() {
     confirmPassword: ''
   });
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState(false);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.id]: e.target.value
+    const { id, value } = e.target;
+    setFormData(prev => {
+      const updated = { ...prev, [id]: value };
+      // Live check for password mismatch
+      if (
+        (id === "password" || id === "confirmPassword") &&
+        updated.password &&
+        updated.confirmPassword
+      ) {
+        setPasswordError(updated.password !== updated.confirmPassword);
+      } else {
+        setPasswordError(false);
+      }
+      return updated;
     });
   };
 
   const handleSignUp = async () => {
+    // Validation
+    if (!formData.email || !formData.password || !formData.confirmPassword || !formData.name) {
+      toast.error("All fields are required!");
+      return;
+    }
+    if (!formData.email.includes("@")) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+    if (formData.password.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
     if (formData.password !== formData.confirmPassword) {
       toast.error("Passwords do not match!");
-      return; // Prevent sign up if passwords don't match
+      return;
     }
 
+    setIsLoading(true);
+
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
           data: {
             full_name: formData.name,
-          }
-        }
+          },
+        },
       });
 
       if (error) throw error;
@@ -54,6 +84,8 @@ export default function Home() {
       setShowSignUp(false);
     } catch (error: any) {
       toast.error(error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -118,13 +150,23 @@ export default function Home() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
-                  <Input 
-                    id="password" 
-                    type="password" 
-                    placeholder="Enter your password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter your password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-xs"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      tabIndex={-1}
+                    >
+                      {showPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col space-y-4">
@@ -188,29 +230,62 @@ export default function Home() {
                     onChange={handleInputChange}
                   />
                 </div>
-                <div className="space-y-2">
+                <motion.div
+                  animate={passwordError ? { x: [0, -10, 10, -10, 10, 0] } : { x: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="space-y-2"
+                >
                   <Label htmlFor="password">Password</Label>
-                  <Input 
-                    id="password" 
-                    type="password" 
-                    placeholder="Create a password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="space-y-2">
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Create a password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-xs"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      tabIndex={-1}
+                    >
+                      {showPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                </motion.div>
+                <motion.div
+                  animate={passwordError ? { x: [0, -10, 10, -10, 10, 0] } : { x: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="space-y-2"
+                >
                   <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <Input 
-                    id="confirmPassword" 
-                    type="password" 
-                    placeholder="Confirm your password"
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                  />
-                </div>
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Confirm your password"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-xs"
+                      onClick={() => setShowConfirmPassword((prev) => !prev)}
+                      tabIndex={-1}
+                    >
+                      {showConfirmPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                  {passwordError && (
+                    <span className="text-red-600 text-xs font-medium">Passwords don't match</span>
+                  )}
+                </motion.div>
               </CardContent>
               <CardFooter className="flex flex-col space-y-4">
-                <Button className="w-full" onClick={handleSignUp}>Sign Up</Button>
+                <Button className="w-full" onClick={handleSignUp} disabled={isLoading}>
+                  {isLoading ? "Signing up..." : "Sign Up"}
+                </Button>
                 <p className="text-sm text-muted-foreground text-center">
                   Already have an account?{" "}
                   <button
