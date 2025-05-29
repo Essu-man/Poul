@@ -44,6 +44,8 @@ export default function MedicationTrackingPage() {
     },
   ]);
 
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+
   // Add new medication record
   const handleSave = () => {
     if (!medEntry.medication || !medEntry.dosage) return;

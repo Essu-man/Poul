@@ -1,7 +1,6 @@
 "use client";
 
 import { Sidebar } from "@/components/Sidebar";
-import { Header } from "@/components/Header";
 import { Pencil, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -317,7 +316,7 @@ export default function EggProductionPage() {
     <div className="flex h-screen bg-gray-20">
       <Sidebar activeTab="egg-production" />
       <div className="flex-1 overflow-auto">
-        <Header activeTab="egg-production" />
+        {/*<Header activeTab="egg-production" />*/}
         <div className="p-6">
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-4">Egg Production Records</h2>
