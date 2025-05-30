@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { eggProduction } from '@/lib/schema';
 import { format } from 'date-fns';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 // Helper function to calculate crates and remaining pieces
 function calculateCratesAndPieces(totalPieces: number) {
@@ -20,7 +20,10 @@ function formatTotal(total: number) {
 export async function POST(request: Request) {
   try {
     const data = await request.json();
-    
+    if (!data.user_id) {
+      return NextResponse.json({ error: "Missing user_id" }, { status: 400 });
+    }
+
     // Calculate crates and pieces for each egg size
     const peeweeTotal = (data.peewee.crates * 30) + data.peewee.pieces;
     const peeweeCalc = calculateCratesAndPieces(peeweeTotal);
@@ -41,6 +44,7 @@ export async function POST(request: Request) {
     const jumboCalc = calculateCratesAndPieces(jumboTotal);
 
     const result = await db.insert(eggProduction).values({
+      user_id: data.user_id, // <--- associate with user
       date: format(new Date(data.date), 'yyyy-MM-dd'),
       peewee_crates: peeweeCalc.crates,
       peewee_pieces: peeweeCalc.pieces,
@@ -66,44 +70,51 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const user_id = searchParams.get('user_id');
+    if (!user_id) {
+      return NextResponse.json([], { status: 401 });
+    }
+
     const records = await db
       .select()
       .from(eggProduction)
+      .where(eq(eggProduction.user_id, user_id))
       .orderBy(eggProduction.date);
     
     const transformedRecords = records.map(record => ({
       date: record.date,
       peewee: {
-        crates: record.peewee_crates,
-        pieces: record.peewee_pieces,
-        total: formatTotal((record.peewee_crates * 30) + record.peewee_pieces)
+        crates: record.peewee_crates ?? 0,
+        pieces: record.peewee_pieces ?? 0,
+        total: formatTotal(((record.peewee_crates ?? 0) * 30) + (record.peewee_pieces ?? 0))
       },
       small: {
-        crates: record.small_crates,
-        pieces: record.small_pieces,
-        total: formatTotal((record.small_crates * 30) + record.small_pieces)
+        crates: record.small_crates ?? 0,
+        pieces: record.small_pieces ?? 0,
+        total: formatTotal(((record.small_crates ?? 0) * 30) + (record.small_pieces ?? 0))
       },
       medium: {
-        crates: record.medium_crates,
-        pieces: record.medium_pieces,
-        total: formatTotal((record.medium_crates * 30) + record.medium_pieces)
+        crates: record.medium_crates ?? 0,
+        pieces: record.medium_pieces ?? 0,
+        total: formatTotal(((record.medium_crates ?? 0) * 30) + (record.medium_pieces ?? 0))
       },
       large: {
-        crates: record.large_crates,
-        pieces: record.large_pieces,
-        total: formatTotal((record.large_crates * 30) + record.large_pieces)
+        crates: record.large_crates ?? 0,
+        pieces: record.large_pieces ?? 0,
+        total: formatTotal(((record.large_crates ?? 0) * 30) + (record.large_pieces ?? 0))
       },
       extraLarge: {
-        crates: record.extra_large_crates,
-        pieces: record.extra_large_pieces,
-        total: formatTotal((record.extra_large_crates * 30) + record.extra_large_pieces)
+        crates: record.extra_large_crates ?? 0,
+        pieces: record.extra_large_pieces ?? 0,
+        total: formatTotal(((record.extra_large_crates ?? 0) * 30) + (record.extra_large_pieces ?? 0))
       },
       jumbo: {
-        crates: record.jumbo_crates,
-        pieces: record.jumbo_pieces,
-        total: formatTotal((record.jumbo_crates * 30) + record.jumbo_pieces)
+        crates: record.jumbo_crates ?? 0,
+        pieces: record.jumbo_pieces ?? 0,
+        total: formatTotal(((record.jumbo_crates ?? 0) * 30) + (record.jumbo_pieces ?? 0))
       }
     }));
 
@@ -121,16 +132,16 @@ export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
-
-    if (!date) {
+    const user_id = searchParams.get('user_id');
+    if (!date || !user_id) {
       return NextResponse.json(
-        { error: 'Date parameter is required' },
+        { error: 'Date and user_id parameter are required' },
         { status: 400 }
       );
     }
 
     await db.delete(eggProduction)
-      .where(eq(eggProduction.date, date));
+      .where(and(eq(eggProduction.date, date), eq(eggProduction.user_id, user_id)));
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -145,7 +156,10 @@ export async function DELETE(request: Request) {
 export async function PUT(request: Request) {
   try {
     const data = await request.json();
-    
+    if (!data.user_id) {
+      return NextResponse.json({ error: "Missing user_id" }, { status: 400 });
+    }
+
     // Calculate crates and pieces for each egg size
     const peeweeTotal = (data.peewee.crates * 30) + data.peewee.pieces;
     const peeweeCalc = calculateCratesAndPieces(peeweeTotal);
@@ -180,7 +194,7 @@ export async function PUT(request: Request) {
         jumbo_crates: jumboCalc.crates,
         jumbo_pieces: jumboCalc.pieces,
       })
-      .where(eq(eggProduction.date, data.date));
+      .where(and(eq(eggProduction.date, data.date), eq(eggProduction.user_id, data.user_id)));
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
+import { signOut } from "firebase/auth"; 
 
 interface SidebarProps {
   activeTab: "dashboard" | "egg-production" | "feed-management" | "medication";
@@ -54,9 +55,7 @@ export function Sidebar({ activeTab }: SidebarProps) {
 
   const handleLogout = async () => {
     try {
-      let { error } = await supabase.auth.signOut();
-      if (error) throw error;
-
+      await signOut(auth);
       toast.success("Logged out successfully");
       router.push("/");
     } catch (error: any) {

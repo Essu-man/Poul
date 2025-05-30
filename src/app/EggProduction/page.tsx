@@ -16,6 +16,7 @@ import { useState, useEffect } from "react";
 
 import { toast } from "sonner";
 import { ConfirmationDialog } from "@/components/ConfirmationDialog";
+import { auth } from "@/lib/firebase"; 
 
 interface EggProduction {
   date: string;
@@ -44,41 +45,43 @@ export default function EggProductionPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<EggProduction | null>(null);
-    // Add these handlers before the handleExportData function
-    const handleDeleteClick = (record: EggProduction) => {
-      setSelectedRecord(record);
-      setIsDeleteDialogOpen(true);
-    };
-    
-    const handleEditClick = (record: EggProduction) => {
-      setSelectedRecord(record);
-      setIsEditDialogOpen(true);
-    };
-    
-    const handleDeleteConfirm = async () => {
-      if (selectedRecord) {
-        await handleDeleteRecord(selectedRecord.date);
-        setIsDeleteDialogOpen(false);
-        setSelectedRecord(null);
-        await fetchProductionHistory(); // Refresh the list after deletion
-      }
-    };
-    
-    const handleEditConfirm = async () => {
-      if (selectedRecord) {
-        await handleUpdateRecord();
-        setIsEditDialogOpen(false);
-        setSelectedRecord(null);
-        await fetchProductionHistory(); // Refresh the list after edit
-      }
-    };
+
+  // Handler functions (move inside the component)
+  const handleDeleteClick = (record: EggProduction) => {
+    setSelectedRecord(record);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleEditClick = (record: EggProduction) => {
+    setSelectedRecord(record);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (selectedRecord) {
+      await handleDeleteRecord(selectedRecord.date);
+      setIsDeleteDialogOpen(false);
+      setSelectedRecord(null);
+      await fetchProductionHistory();
+    }
+  };
+
+  const handleEditConfirm = async () => {
+    if (selectedRecord) {
+      await handleUpdateRecord();
+      setIsEditDialogOpen(false);
+      setSelectedRecord(null);
+      await fetchProductionHistory();
+    }
+  };
 
   const fetchProductionHistory = async () => {
+    const user = auth.currentUser;
+    if (!user) return; // Wait until user is loaded
+
     try {
-      const response = await fetch('/api/egg-production');
-      if (!response.ok) {
-        throw new Error('Failed to fetch records');
-      }
+      const response = await fetch(`/api/egg-production?user_id=${user.uid}`);
+      if (!response.ok) throw new Error('Failed to fetch records');
       const data = await response.json();
       console.log('Fetched data:', data);
       if (Array.isArray(data)) {
@@ -141,6 +144,9 @@ export default function EggProductionPage() {
   };
 
   const handleSaveRecord = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
     try {
       // Check if record already exists for this date
       const existingRecord = productionHistory.find(record => record.date === eggProduction.date);
@@ -160,10 +166,8 @@ export default function EggProductionPage() {
 
       const response = await fetch('/api/egg-production', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(eggProduction),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...eggProduction, user_id: user.uid }),
       });
 
       if (!response.ok) {
@@ -202,44 +206,73 @@ export default function EggProductionPage() {
 
   // Fetch records on component mount
   useEffect(() => {
-    fetchProductionHistory();
-  }, []);
+    const fetchProductionHistory = async () => {
+      const user = auth.currentUser;
+      if (!user) return; // Wait until user is loaded
+
+      try {
+        const response = await fetch(`/api/egg-production?user_id=${user.uid}`);
+        if (!response.ok) throw new Error('Failed to fetch records');
+        const data = await response.json();
+        console.log('Fetched data:', data);
+        if (Array.isArray(data)) {
+          setProductionHistory(data.map(record => ({
+            ...record,
+            date: record.date,
+            peewee: record.peewee || { crates: 0, pieces: 0 },
+            small: record.small || { crates: 0, pieces: 0 },
+            medium: record.medium || { crates: 0, pieces: 0 },
+            large: record.large || { crates: 0, pieces: 0 },
+            extraLarge: record.extraLarge || { crates: 0, pieces: 0 },
+            jumbo: record.jumbo || { crates: 0, pieces: 0 }
+          })));
+        } else {
+          console.error('Invalid data format received:', data);
+          toast.error('Error loading production history');
+        }
+      } catch (error) {
+        console.error('Error fetching records:', error);
+        toast.error('Failed to fetch production records');
+      }
+    };
+
+    // Only fetch if user is present
+    if (auth.currentUser) {
+      fetchProductionHistory();
+    }
+  }, [auth.currentUser]);
 
   const handleUpdateRecord = async () => {
-    try {
-      const response = await fetch('/api/egg-production', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(eggProduction),
-      });
+    const user = auth.currentUser;
+    if (!user) return;
 
-      if (!response.ok) {
-        throw new Error('Failed to update record');
-      }
+    const response = await fetch('/api/egg-production', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...eggProduction, user_id: user.uid }),
+    });
 
-      toast.success('Record updated successfully');
-      setIsEditing(false);
-      setIsDialogOpen(false); 
-      
-      // Reset form
-      setEggProduction({
-        date: format(new Date(), "yyyy-MM-dd"),
-        peewee: { crates: 0, pieces: 0 },
-        small: { crates: 0, pieces: 0 },
-        medium: { crates: 0, pieces: 0 },
-        large: { crates: 0, pieces: 0 },
-        extraLarge: { crates: 0, pieces: 0 },
-        jumbo: { crates: 0, pieces: 0 }
-      });
-
-      // Refresh the production history
-      fetchProductionHistory();
-    } catch (error) {
-      console.error('Error updating record:', error);
-      toast.error('Failed to update record');
+    if (!response.ok) {
+      throw new Error('Failed to update record');
     }
+
+    toast.success('Record updated successfully');
+    setIsEditing(false);
+    setIsDialogOpen(false); 
+    
+    // Reset form
+    setEggProduction({
+      date: format(new Date(), "yyyy-MM-dd"),
+      peewee: { crates: 0, pieces: 0 },
+      small: { crates: 0, pieces: 0 },
+      medium: { crates: 0, pieces: 0 },
+      large: { crates: 0, pieces: 0 },
+      extraLarge: { crates: 0, pieces: 0 },
+      jumbo: { crates: 0, pieces: 0 }
+    });
+
+    // Refresh the production history
+    fetchProductionHistory();
   };
 
   const handleCancelEdit = () => {
@@ -261,31 +294,27 @@ export default function EggProductionPage() {
   };
 
   const handleDeleteRecord = async (date: string) => {
-    try {
-      const response = await fetch(`/api/egg-production?date=${date}`, {
-        method: 'DELETE',
-      });
-  
-      if (!response.ok) {
-        throw new Error('Failed to delete record');
-      }
-  
-      toast.success('Record deleted successfully', {
-        icon: "✅",
-        style: {
-          background: '#10B981',
-          color: 'white',
-        },
-      });
-  
-      // Refresh the production history
-      fetchProductionHistory();
-    } catch (error) {
-      console.error('Error deleting record:', error);
-      toast.error('Failed to delete record', {
-        icon: "❌",
-      });
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const response = await fetch(`/api/egg-production?date=${date}&user_id=${user.uid}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete record');
     }
+
+    toast.success('Record deleted successfully', {
+      icon: "✅",
+      style: {
+        background: '#10B981',
+        color: 'white',
+      },
+    });
+
+    // Refresh the production history
+    fetchProductionHistory();
   };
 
   const handleExportData = () => {
@@ -630,212 +659,220 @@ export default function EggProductionPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {productionHistory.map((record, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{format(new Date(record.date), "MMM dd, yyyy")}</td>
-                          <td className="px-4 py-3 text-right whitespace-nowrap text-sm text-gray-600">{calculateTotalEggs(record.peewee)}</td>
-                          <td className="px-4 py-3 text-right whitespace-nowrap text-sm text-gray-600">{calculateTotalEggs(record.small)}</td>
-                          <td className="px-4 py-3 text-right whitespace-nowrap text-sm text-gray-600">{calculateTotalEggs(record.medium)}</td>
-                          <td className="px-4 py-3 text-right whitespace-nowrap text-sm text-gray-600">{calculateTotalEggs(record.large)}</td>
-                          <td className="px-4 py-3 text-right whitespace-nowrap text-sm text-gray-600">{calculateTotalEggs(record.extraLarge)}</td>
-                          <td className="px-4 py-3 text-right whitespace-nowrap text-sm text-gray-600">{calculateTotalEggs(record.jumbo)}</td>
-                          <td className="px-4 py-3 text-right whitespace-nowrap text-sm font-medium text-gray-900">
-                            {calculateTotalEggs(record.peewee) +
-                              calculateTotalEggs(record.small) +
-                              calculateTotalEggs(record.medium) +
-                              calculateTotalEggs(record.large) +
-                              calculateTotalEggs(record.extraLarge) +
-                              calculateTotalEggs(record.jumbo)}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                            <div className="flex justify-center space-x-2">
-                              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                                <DialogTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => handleEditRecord(record)}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent className="max-w-2xl">
-                                  <DialogHeader>
-                                    <DialogTitle>Edit Egg Production Record</DialogTitle>
-                                    <DialogDescription>
-                                      Edit production data for {format(new Date(record.date), "MMMM dd, yyyy")}
-                                    </DialogDescription>
-                                  </DialogHeader>
-                                  
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-                                    {/* Peewee */}
-                                    <div className="space-y-2">
-                                      <h3 className="font-semibold">Peewee</h3>
-                                      <div className="space-y-1">
-                                        <Label>Crates</Label>
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          value={eggProduction.peewee.crates}
-                                          onChange={(e) => handleEggInputChange("peewee", "crates", e.target.value)}
-                                        />
-                                      </div>
-                                      <div className="space-y-1">
-                                        <Label>Pieces</Label>
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          max="29"
-                                          value={eggProduction.peewee.pieces}
-                                          onChange={(e) => handleEggInputChange("peewee", "pieces", e.target.value)}
-                                        />
-                                      </div>
-                                    </div>
-
-                                    {/* Small */}
-                                    <div className="space-y-2">
-                                      <h3 className="font-semibold">Small</h3>
-                                      <div className="space-y-1">
-                                        <Label>Crates</Label>
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          value={eggProduction.small.crates}
-                                          onChange={(e) => handleEggInputChange("small", "crates", e.target.value)}
-                                        />
-                                      </div>
-                                      <div className="space-y-1">
-                                        <Label>Pieces</Label>
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          max="29"
-                                          value={eggProduction.small.pieces}
-                                          onChange={(e) => handleEggInputChange("small", "pieces", e.target.value)}
-                                        />
-                                      </div>
-                                    </div>
-
-                                    {/* Medium */}
-                                    <div className="space-y-2">
-                                      <h3 className="font-semibold">Medium</h3>
-                                      <div className="space-y-1">
-                                        <Label>Crates</Label>
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          value={eggProduction.medium.crates}
-                                          onChange={(e) => handleEggInputChange("medium", "crates", e.target.value)}
-                                        />
-                                      </div>
-                                      <div className="space-y-1">
-                                        <Label>Pieces</Label>
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          max="29"
-                                          value={eggProduction.medium.pieces}
-                                          onChange={(e) => handleEggInputChange("medium", "pieces", e.target.value)}
-                                        />
-                                      </div>
-                                    </div>
-
-                                    {/* Large */}
-                                    <div className="space-y-2">
-                                      <h3 className="font-semibold">Large</h3>
-                                      <div className="space-y-1">
-                                        <Label>Crates</Label>
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          value={eggProduction.large.crates}
-                                          onChange={(e) => handleEggInputChange("large", "crates", e.target.value)}
-                                        />
-                                      </div>
-                                      <div className="space-y-1">
-                                        <Label>Pieces</Label>
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          max="29"
-                                          value={eggProduction.large.pieces}
-                                          onChange={(e) => handleEggInputChange("large", "pieces", e.target.value)}
-                                        />
-                                      </div>
-                                    </div>
-
-                                    {/* Extra Large */}
-                                    <div className="space-y-2">
-                                      <h3 className="font-semibold">Extra Large</h3>
-                                      <div className="space-y-1">
-                                        <Label>Crates</Label>
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          value={eggProduction.extraLarge.crates}
-                                          onChange={(e) => handleEggInputChange("extraLarge", "crates", e.target.value)}
-                                        />
-                                      </div>
-                                      <div className="space-y-1">
-                                        <Label>Pieces</Label>
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          max="29"
-                                          value={eggProduction.extraLarge.pieces}
-                                          onChange={(e) => handleEggInputChange("extraLarge", "pieces", e.target.value)}
-                                        />
-                                      </div>
-                                    </div>
-
-                                    {/* Jumbo */}
-                                    <div className="space-y-2">
-                                      <h3 className="font-semibold">Jumbo</h3>
-                                      <div className="space-y-1">
-                                        <Label>Crates</Label>
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          value={eggProduction.jumbo.crates}
-                                          onChange={(e) => handleEggInputChange("jumbo", "crates", e.target.value)}
-                                        />
-                                      </div>
-                                      <div className="space-y-1">
-                                        <Label>Pieces</Label>
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          max="29"
-                                          value={eggProduction.jumbo.pieces}
-                                          onChange={(e) => handleEggInputChange("jumbo", "pieces", e.target.value)}
-                                        />
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <DialogFooter>
-                                    <Button variant="outline" onClick={handleCancelEdit}>
-                                      Cancel
-                                    </Button>
-                                    <Button onClick={handleUpdateRecord} className="bg-amber-600 hover:bg-amber-700">
-                                      Update Record
-                                    </Button>
-                                  </DialogFooter>
-                                </DialogContent>
-                              </Dialog>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                onClick={() => handleDeleteRecord(record.date)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
+                      {productionHistory.length === 0 ? (
+                        <tr>
+                          <td colSpan={9} className="px-4 py-3 text-center text-sm text-gray-500">
+                            No records yet. Add your first egg production record!
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        productionHistory.map((record, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{format(new Date(record.date), "MMM dd, yyyy")}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap text-sm text-gray-600">{calculateTotalEggs(record.peewee)}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap text-sm text-gray-600">{calculateTotalEggs(record.small)}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap text-sm text-gray-600">{calculateTotalEggs(record.medium)}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap text-sm text-gray-600">{calculateTotalEggs(record.large)}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap text-sm text-gray-600">{calculateTotalEggs(record.extraLarge)}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap text-sm text-gray-600">{calculateTotalEggs(record.jumbo)}</td>
+                            <td className="px-4 py-3 text-right whitespace-nowrap text-sm font-medium text-gray-900">
+                              {calculateTotalEggs(record.peewee) +
+                                calculateTotalEggs(record.small) +
+                                calculateTotalEggs(record.medium) +
+                                calculateTotalEggs(record.large) +
+                                calculateTotalEggs(record.extraLarge) +
+                                calculateTotalEggs(record.jumbo)}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                              <div className="flex justify-center space-x-2">
+                                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                                  <DialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => handleEditRecord(record)}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="max-w-2xl">
+                                    <DialogHeader>
+                                      <DialogTitle>Edit Egg Production Record</DialogTitle>
+                                      <DialogDescription>
+                                        Edit production data for {format(new Date(record.date), "MMMM dd, yyyy")}
+                                      </DialogDescription>
+                                    </DialogHeader>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+                                      {/* Peewee */}
+                                      <div className="space-y-2">
+                                        <h3 className="font-semibold">Peewee</h3>
+                                        <div className="space-y-1">
+                                          <Label>Crates</Label>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            value={eggProduction.peewee.crates}
+                                            onChange={(e) => handleEggInputChange("peewee", "crates", e.target.value)}
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label>Pieces</Label>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            max="29"
+                                            value={eggProduction.peewee.pieces}
+                                            onChange={(e) => handleEggInputChange("peewee", "pieces", e.target.value)}
+                                          />
+                                        </div>
+                                      </div>
+
+                                      {/* Small */}
+                                      <div className="space-y-2">
+                                        <h3 className="font-semibold">Small</h3>
+                                        <div className="space-y-1">
+                                          <Label>Crates</Label>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            value={eggProduction.small.crates}
+                                            onChange={(e) => handleEggInputChange("small", "crates", e.target.value)}
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label>Pieces</Label>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            max="29"
+                                            value={eggProduction.small.pieces}
+                                            onChange={(e) => handleEggInputChange("small", "pieces", e.target.value)}
+                                          />
+                                        </div>
+                                      </div>
+
+                                      {/* Medium */}
+                                      <div className="space-y-2">
+                                        <h3 className="font-semibold">Medium</h3>
+                                        <div className="space-y-1">
+                                          <Label>Crates</Label>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            value={eggProduction.medium.crates}
+                                            onChange={(e) => handleEggInputChange("medium", "crates", e.target.value)}
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label>Pieces</Label>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            max="29"
+                                            value={eggProduction.medium.pieces}
+                                            onChange={(e) => handleEggInputChange("medium", "pieces", e.target.value)}
+                                          />
+                                        </div>
+                                      </div>
+
+                                      {/* Large */}
+                                      <div className="space-y-2">
+                                        <h3 className="font-semibold">Large</h3>
+                                        <div className="space-y-1">
+                                          <Label>Crates</Label>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            value={eggProduction.large.crates}
+                                            onChange={(e) => handleEggInputChange("large", "crates", e.target.value)}
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label>Pieces</Label>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            max="29"
+                                            value={eggProduction.large.pieces}
+                                            onChange={(e) => handleEggInputChange("large", "pieces", e.target.value)}
+                                          />
+                                        </div>
+                                      </div>
+
+                                      {/* Extra Large */}
+                                      <div className="space-y-2">
+                                        <h3 className="font-semibold">Extra Large</h3>
+                                        <div className="space-y-1">
+                                          <Label>Crates</Label>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            value={eggProduction.extraLarge.crates}
+                                            onChange={(e) => handleEggInputChange("extraLarge", "crates", e.target.value)}
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label>Pieces</Label>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            max="29"
+                                            value={eggProduction.extraLarge.pieces}
+                                            onChange={(e) => handleEggInputChange("extraLarge", "pieces", e.target.value)}
+                                          />
+                                        </div>
+                                      </div>
+
+                                      {/* Jumbo */}
+                                      <div className="space-y-2">
+                                        <h3 className="font-semibold">Jumbo</h3>
+                                        <div className="space-y-1">
+                                          <Label>Crates</Label>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            value={eggProduction.jumbo.crates}
+                                            onChange={(e) => handleEggInputChange("jumbo", "crates", e.target.value)}
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label>Pieces</Label>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            max="29"
+                                            value={eggProduction.jumbo.pieces}
+                                            onChange={(e) => handleEggInputChange("jumbo", "pieces", e.target.value)}
+                                          />
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    <DialogFooter>
+                                      <Button variant="outline" onClick={handleCancelEdit}>
+                                        Cancel
+                                      </Button>
+                                      <Button onClick={handleUpdateRecord} className="bg-amber-600 hover:bg-amber-700">
+                                        Update Record
+                                      </Button>
+                                    </DialogFooter>
+                                  </DialogContent>
+                                </Dialog>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => handleDeleteRecord(record.date)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
