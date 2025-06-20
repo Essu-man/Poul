@@ -268,7 +268,7 @@ export default function Dashboard() {
     return (
       <div className="flex h-screen bg-gray-50">
         <Sidebar activeTab="dashboard" />
-      
+       <Header activeTab="dashboard" className="flex-shrink-0" />
         <main className="flex-1 p-6 space-y-6">
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

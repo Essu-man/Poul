@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import { signOut } from "firebase/auth"; 
+import { useAuth } from '@/context/AuthContext';
 
 interface SidebarProps {
   activeTab: "dashboard" | "egg-production" | "feed-management" | "medication";
@@ -16,6 +17,7 @@ export function Sidebar({ activeTab }: SidebarProps) {
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {

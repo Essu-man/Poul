@@ -14,11 +14,14 @@ import { format } from "date-fns";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 
+
 import { toast } from "sonner";
 import { ConfirmationDialog } from "@/components/ConfirmationDialog";
-import { auth } from "@/lib/firebase"; 
+import { db, auth } from "@/lib/firebase"; 
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore";
 
 interface EggProduction {
+  id?: string; 
   date: string;
   peewee: { crates: number; pieces: number };
   small: { crates: number; pieces: number };
@@ -80,25 +83,8 @@ export default function EggProductionPage() {
     if (!user) return; // Wait until user is loaded
 
     try {
-      const response = await fetch(`/api/egg-production?user_id=${user.uid}`);
-      if (!response.ok) throw new Error('Failed to fetch records');
-      const data = await response.json();
-      console.log('Fetched data:', data);
-      if (Array.isArray(data)) {
-        setProductionHistory(data.map(record => ({
-          ...record,
-          date: record.date,
-          peewee: record.peewee || { crates: 0, pieces: 0 },
-          small: record.small || { crates: 0, pieces: 0 },
-          medium: record.medium || { crates: 0, pieces: 0 },
-          large: record.large || { crates: 0, pieces: 0 },
-          extraLarge: record.extraLarge || { crates: 0, pieces: 0 },
-          jumbo: record.jumbo || { crates: 0, pieces: 0 }
-        })));
-      } else {
-        console.error('Invalid data format received:', data);
-        toast.error('Error loading production history');
-      }
+      const querySnapshot = await getDocs(collection(db, "users", user.uid, "eggProduction"));
+      setProductionHistory(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
       console.error('Error fetching records:', error);
       toast.error('Failed to fetch production records');
@@ -164,15 +150,7 @@ export default function EggProductionPage() {
         return;
       }
 
-      const response = await fetch('/api/egg-production', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...eggProduction, user_id: user.uid }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save record');
-      }
+      await addDoc(collection(db, "users", user.uid, "eggProduction"), eggProduction);
 
       // Show success toast
       toast.success('Production record saved successfully', {
@@ -204,32 +182,15 @@ export default function EggProductionPage() {
     }
   };
 
-  // Fetch records on component mount
+
   useEffect(() => {
     const fetchProductionHistory = async () => {
       const user = auth.currentUser;
       if (!user) return; // Wait until user is loaded
 
       try {
-        const response = await fetch(`/api/egg-production?user_id=${user.uid}`);
-        if (!response.ok) throw new Error('Failed to fetch records');
-        const data = await response.json();
-        console.log('Fetched data:', data);
-        if (Array.isArray(data)) {
-          setProductionHistory(data.map(record => ({
-            ...record,
-            date: record.date,
-            peewee: record.peewee || { crates: 0, pieces: 0 },
-            small: record.small || { crates: 0, pieces: 0 },
-            medium: record.medium || { crates: 0, pieces: 0 },
-            large: record.large || { crates: 0, pieces: 0 },
-            extraLarge: record.extraLarge || { crates: 0, pieces: 0 },
-            jumbo: record.jumbo || { crates: 0, pieces: 0 }
-          })));
-        } else {
-          console.error('Invalid data format received:', data);
-          toast.error('Error loading production history');
-        }
+        const querySnapshot = await getDocs(collection(db, "users", user.uid, "eggProduction"));
+        setProductionHistory(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } catch (error) {
         console.error('Error fetching records:', error);
         toast.error('Failed to fetch production records');
@@ -246,33 +207,35 @@ export default function EggProductionPage() {
     const user = auth.currentUser;
     if (!user) return;
 
-    const response = await fetch('/api/egg-production', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...eggProduction, user_id: user.uid }),
-    });
+    const recordId = selectedRecord?.id;
+    if (!recordId) return;
 
-    if (!response.ok) {
-      throw new Error('Failed to update record');
+    try {
+      await updateDoc(doc(db, "users", user.uid, "eggProduction", recordId), eggProduction);
+
+      toast.success('Record updated successfully');
+      setIsEditing(false);
+      setIsDialogOpen(false); 
+      
+      // Reset form
+      setEggProduction({
+        date: format(new Date(), "yyyy-MM-dd"),
+        peewee: { crates: 0, pieces: 0 },
+        small: { crates: 0, pieces: 0 },
+        medium: { crates: 0, pieces: 0 },
+        large: { crates: 0, pieces: 0 },
+        extraLarge: { crates: 0, pieces: 0 },
+        jumbo: { crates: 0, pieces: 0 }
+      });
+
+      // Refresh the production history
+      fetchProductionHistory();
+    } catch (error) {
+      console.error('Error updating record:', error);
+      toast.error('Failed to update record', {
+        icon: "❌",
+      });
     }
-
-    toast.success('Record updated successfully');
-    setIsEditing(false);
-    setIsDialogOpen(false); 
-    
-    // Reset form
-    setEggProduction({
-      date: format(new Date(), "yyyy-MM-dd"),
-      peewee: { crates: 0, pieces: 0 },
-      small: { crates: 0, pieces: 0 },
-      medium: { crates: 0, pieces: 0 },
-      large: { crates: 0, pieces: 0 },
-      extraLarge: { crates: 0, pieces: 0 },
-      jumbo: { crates: 0, pieces: 0 }
-    });
-
-    // Refresh the production history
-    fetchProductionHistory();
   };
 
   const handleCancelEdit = () => {
@@ -297,24 +260,28 @@ export default function EggProductionPage() {
     const user = auth.currentUser;
     if (!user) return;
 
-    const response = await fetch(`/api/egg-production?date=${date}&user_id=${user.uid}`, {
-      method: 'DELETE',
-    });
+    const recordId = selectedRecord?.id;
+    if (!recordId) return;
 
-    if (!response.ok) {
-      throw new Error('Failed to delete record');
+    try {
+      await deleteDoc(doc(db, "users", user.uid, "eggProduction", recordId));
+
+      toast.success('Record deleted successfully', {
+        icon: "✅",
+        style: {
+          background: '#10B981',
+          color: 'white',
+        },
+      });
+
+      // Refresh the production history
+      fetchProductionHistory();
+    } catch (error) {
+      console.error('Error deleting record:', error);
+      toast.error('Failed to delete record', {
+        icon: "❌",
+      });
     }
-
-    toast.success('Record deleted successfully', {
-      icon: "✅",
-      style: {
-        background: '#10B981',
-        color: 'white',
-      },
-    });
-
-    // Refresh the production history
-    fetchProductionHistory();
   };
 
   const handleExportData = () => {
@@ -342,10 +309,10 @@ export default function EggProductionPage() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-20">
+    <div className="flex h-screen bg-gray-200">
       <Sidebar activeTab="egg-production" />
       <div className="flex-1 overflow-auto">
-        {/*<Header activeTab="egg-production" />*/}
+       {/* <Header activeTab="egg-production" />*/}
         <div className="p-6">
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-4">Egg Production Records</h2>

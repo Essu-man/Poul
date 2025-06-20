@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { inter } from './fonts';
+import { AuthProvider } from '@/context/AuthContext';
+import {Header} from "@/components/Header";
 
 export const metadata: Metadata = {
   title: "Poultry Farm Management",
@@ -16,7 +18,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.className}>
       <body>
-        {children}
+        <AuthProvider>
+          <Header activeTab="dashboard" />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
