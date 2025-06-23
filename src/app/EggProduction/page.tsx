@@ -9,6 +9,7 @@ import { CustomDatePicker } from "@/components/ui/custom-date-picker";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Header } from "@/components/Header";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import Link from "next/link";
@@ -309,10 +310,10 @@ export default function EggProductionPage() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-200">
+    <div className="flex h-screen bg-gray-20">
       <Sidebar activeTab="egg-production" />
       <div className="flex-1 overflow-auto">
-       {/* <Header activeTab="egg-production" />*/}
+        <Header activeTab="egg-production" />
         <div className="p-6">
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-4">Egg Production Records</h2>
