@@ -1,7 +1,11 @@
+
+
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { inter } from './fonts';
+import { AuthProvider } from '@/context/AuthContext';
+
 
 export const metadata: Metadata = {
   title: "Poultry Farm Management",
@@ -16,7 +20,14 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.className}>
       <body>
-        {children}
+        <AuthProvider>
+          <div className="min-h-screen flex flex-col">
+            <main className="flex-1">
+              {children}
+            </main>
+            <Toaster position="top-right" />
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );

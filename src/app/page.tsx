@@ -9,6 +9,7 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfi
 import { auth } from "@/lib/firebase";
 import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Simple poultry bird SVG icon
 function BirdIcon({ className = "w-12 h-12" }: { className?: string }) {
@@ -27,6 +28,7 @@ function BirdIcon({ className = "w-12 h-12" }: { className?: string }) {
 export default function AuthPage() {
   const [showSignUp, setShowSignUp] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState("");
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-white px-2">
@@ -45,6 +47,7 @@ export default function AuthPage() {
             onSuccess={() => setShowSignUp(false)}
             showVerificationModal={showVerificationModal}
             setShowVerificationModal={setShowVerificationModal}
+            onVerificationEmailSent={(email) => setVerificationEmail(email)}
           />
         ) : (
           <LoginForm onSignUp={() => setShowSignUp(true)} />
@@ -54,7 +57,7 @@ export default function AuthPage() {
             <DialogHeader>
               <DialogTitle>Verify Your Email</DialogTitle>
               <DialogDescription>
-                A verification email has been sent to <b>{}</b>.<br />
+                A verification email has been sent to <b>{verificationEmail}</b>.<br />
                 Please check your inbox and verify your email before logging in.
               </DialogDescription>
             </DialogHeader>
@@ -76,7 +79,7 @@ export default function AuthPage() {
 }
 
 function LoginForm({ onSignUp }: { onSignUp: () => void }) {
-  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [formData, setFormData] = useState({ email: "", password: "", role: "employee" });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoginLoading, setIsLoginLoading] = useState(false);
   const router = useRouter();
@@ -85,18 +88,57 @@ function LoginForm({ onSignUp }: { onSignUp: () => void }) {
     setFormData({ ...formData, [e.target.id]: e.target.value });
   };
 
-  const handleLogin = async () => {
-    if (!formData.email || !formData.password) {
-      toast.error("Please enter your email and password.");
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.email || !formData.password || !formData.role) {
+      toast.error("Please enter your email, password, and select a role.");
       return;
     }
+
     setIsLoginLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      const user = userCredential.user;
+
+      if (!user.emailVerified) {
+        toast.error("Please verify your email before logging in.");
+        setIsLoginLoading(false);
+        return;
+      }
+
+      // Fetch user data from our database
+      const response = await fetch(`/api/users?email=${user.email}`);
+      
+      if (!response.ok) {
+        if (formData.role === 'administrator') {
+            toast.error("Account not found. Please check your credentials or sign up.");
+        } else {
+            toast.error("An error occurred. Please try again.");
+        }
+        setIsLoginLoading(false);
+        return;
+      }
+
+      const dbUser = await response.json();
+
+      if (dbUser.role !== formData.role) {
+        if (formData.role === 'administrator') {
+            toast.error("Account not found. You do not have permission for this role.");
+        } else {
+            toast.error("Access denied. You do not have permission for this role.");
+        }
+        setIsLoginLoading(false);
+        return;
+      }
+
       toast.success("Login successful! Welcome back!");
       router.push("/Dashboard");
     } catch (error: any) {
-      toast.error(error.message);
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+            toast.error("Invalid credentials. Please check your email and password.");
+        } else {
+            toast.error(error.message);
+        }
       setIsLoginLoading(false);
     }
   };
@@ -109,13 +151,19 @@ function LoginForm({ onSignUp }: { onSignUp: () => void }) {
       <p className="mb-8 text-gray-500 text-center text-base sm:text-lg">
         Login to manage your poultry farm
       </p>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleLogin();
-        }}
-        className="space-y-6 w-full"
-      >
+      <form onSubmit={handleLogin} className="space-y-6 w-full">
+        <div className="space-y-2">
+          <Label htmlFor="role" className="text-base sm:text-lg">Role</Label>
+          <Select value={formData.role} onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}>
+            <SelectTrigger className="w-full h-12 sm:h-14 text-base sm:text-lg rounded-xl px-5 border-2 border-neutral-200 focus:border-black">
+              <SelectValue placeholder="Select your role" />
+            </SelectTrigger>
+            <SelectContent className="w-full bg-white shadow-lg border-2 border-neutral-200 z-50">
+              <SelectItem value="employee">Employee</SelectItem>
+              <SelectItem value="administrator">Administrator</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <div className="space-y-2">
           <Label htmlFor="email" className="text-base sm:text-lg">Email</Label>
           <Input
@@ -179,12 +227,13 @@ function isStrongPassword(password: string) {
          password.length >= 6;
 }
 
-function SignUpForm({ onSuccess, showVerificationModal, setShowVerificationModal }: { onSuccess: () => void, showVerificationModal: boolean, setShowVerificationModal: (open: boolean) => void }) {
+function SignUpForm({ onSuccess, showVerificationModal, setShowVerificationModal, onVerificationEmailSent }: { onSuccess: () => void, showVerificationModal: boolean, setShowVerificationModal: (open: boolean) => void, onVerificationEmailSent: (email: string) => void }) {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     name: "",
     confirmPassword: "",
+    role: "employee"
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -208,43 +257,49 @@ function SignUpForm({ onSuccess, showVerificationModal, setShowVerificationModal
     });
   };
 
-  const handleSignUp = async () => {
-    if (
-      !formData.email ||
-      !formData.password ||
-      !formData.confirmPassword ||
-      !formData.name
-    ) {
-      toast.error("All fields are required!");
-      return;
-    }
-    if (!formData.email.includes("@")) {
-      toast.error("Please enter a valid email address.");
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Passwords do not match.");
       return;
     }
     if (!isStrongPassword(formData.password)) {
-      toast.error(
-        "Password must be at least 6 characters and include uppercase, lowercase, and a number."
-      );
-      return;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      toast.error("Passwords do not match!");
       setPasswordError(true);
+      toast.error(
+        "Password must be at least 6 characters long and contain at least one uppercase letter, one lowercase letter, and one number."
+      );
       return;
     }
 
     setIsSignUpLoading(true);
-
     try {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         formData.email,
         formData.password
       );
-      await updateProfile(userCredential.user, { displayName: formData.name });
-      await sendEmailVerification(userCredential.user);
-      setShowVerificationModal(true); // Show modal instead of toast
+      const user = userCredential.user;
+
+      await updateProfile(user, { displayName: formData.name });
+      await sendEmailVerification(user);
+
+      // Create user in our database
+      await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: user.uid,
+          email: user.email,
+          role: formData.role,
+          name: formData.name,
+        }),
+      });
+
+      onVerificationEmailSent(formData.email);
+      setShowVerificationModal(true);
+      onSuccess();
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -260,13 +315,19 @@ function SignUpForm({ onSuccess, showVerificationModal, setShowVerificationModal
       <p className="mb-8 text-gray-500 text-center text-base sm:text-lg">
         Sign up to start managing your farm
       </p>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleSignUp();
-        }}
-        className="space-y-6 w-full"
-      >
+      <form onSubmit={handleSignUp} className="space-y-6 w-full">
+        <div className="space-y-2">
+          <Label htmlFor="role" className="text-base sm:text-lg">Role</Label>
+          <Select value={formData.role} onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}>
+            <SelectTrigger className="w-full h-12 sm:h-14 text-base sm:text-lg rounded-xl px-5 border-2 border-neutral-200 focus:border-black">
+              <SelectValue placeholder="Select your role" />
+            </SelectTrigger>
+            <SelectContent className="w-full bg-white shadow-lg border-2 border-neutral-200 z-50">
+              <SelectItem value="employee">Employee</SelectItem>
+              <SelectItem value="administrator">Administrator</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <div className="space-y-2">
           <Label htmlFor="name" className="text-base sm:text-lg">Full Name</Label>
           <Input

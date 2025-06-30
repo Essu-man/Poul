@@ -3,6 +3,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { createEggProduction } from './0000_create_egg_production';
 import { createtasks } from './0001_create_tasks';
+import { createUsers } from './0002_create_users';
 
 // Load environment variables
 config();
@@ -20,6 +21,7 @@ const runMigration = async () => {
     await client.unsafe(createEggProduction);
     // Inside runMigration function, add:
     await client.unsafe(createtasks);
+    await client.unsafe(createUsers);
     console.log('Migration completed successfully');
   } catch (error) {
     console.error('Migration failed:', error);

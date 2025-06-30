@@ -1,6 +1,5 @@
 "use client";
 import { Sidebar } from "@/components/Sidebar";
-import { Header } from "@/components/Header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -14,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useEffect, useState } from "react";
+
 
 
 
@@ -107,13 +107,13 @@ export default function Dashboard() {
       const response = await fetch('/api/egg-production');
       if (!response.ok) throw new Error('Failed to fetch egg production data');
       const data = await response.json();
-      console.log('Fetched production data:', data); // Debug log
+      console.log('Fetched production data:', data); 
       setProductionData(data);
       
       // Calculate total eggs for today
       const today = format(new Date(), 'yyyy-MM-dd');
       const todayRecord = data.find((record: any) => record.date === today);
-      console.log('Today\'s record:', todayRecord); // Debug log
+      console.log('Today\'s record:', todayRecord); 
       
       const todayTotal = todayRecord ? calculateTotalEggs(todayRecord) : 0;
       console.log('Calculated total eggs:', todayTotal); // Debug log
@@ -268,7 +268,6 @@ export default function Dashboard() {
     return (
       <div className="flex h-screen bg-gray-50">
         <Sidebar activeTab="dashboard" />
-      
         <main className="flex-1 p-6 space-y-6">
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

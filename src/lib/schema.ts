@@ -27,3 +27,11 @@ export const tasks = pgTable('tasks', {
   completed: integer('completed').notNull().default(0),
   created_at: timestamp('created_at').defaultNow()
 });
+
+export const users = pgTable('users', {
+  id: text('id').primaryKey(), // Firebase UID
+  email: text('email').unique().notNull(),
+  role: text('role').notNull().default('employee'),
+  name: text('name'),
+  created_at: timestamp('created_at').defaultNow()
+});

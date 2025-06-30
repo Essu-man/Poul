@@ -9,10 +9,12 @@ import { CustomDatePicker } from "@/components/ui/custom-date-picker";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Header } from "@/components/Header";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+
 
 import { toast } from "sonner";
 import { ConfirmationDialog } from "@/components/ConfirmationDialog";
@@ -20,7 +22,11 @@ import { db, auth } from "@/lib/firebase";
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore";
 
 interface EggProduction {
+<<<<<<< HEAD
   id?: string; // Add this for Firebase document ID
+=======
+  id?: string; 
+>>>>>>> f7a97ee4eaf08f363cc4f33126fc4e935df4c48c
   date: string;
   peewee: { crates: number; pieces: number };
   small: { crates: number; pieces: number };
@@ -181,7 +187,7 @@ export default function EggProductionPage() {
     }
   };
 
-  // Fetch records on component mount
+
   useEffect(() => {
     const fetchProductionHistory = async () => {
       const user = auth.currentUser;
@@ -311,7 +317,7 @@ export default function EggProductionPage() {
     <div className="flex h-screen bg-gray-20">
       <Sidebar activeTab="egg-production" />
       <div className="flex-1 overflow-auto">
-        {/*<Header activeTab="egg-production" />*/}
+        <Header activeTab="egg-production" />
         <div className="p-6">
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-4">Egg Production Records</h2>
