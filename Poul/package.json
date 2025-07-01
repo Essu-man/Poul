@@ -1,5 +1,4 @@
 {
-<<<<<<< HEAD
   "name": "poul",
   "version": "0.1.0",
   "private": true,
@@ -33,6 +32,7 @@
     "drizzle-orm": "^0.43.1",
     "echarts": "^5.6.0",
     "firebase": "^11.9.1",
+    "firebase-admin": "^13.4.0",
     "framer-motion": "^12.9.4",
     "lucide-react": "^0.503.0",
     "next": "14.0.4",
@@ -54,38 +54,11 @@
     "eslint-config-next": "14.0.4",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
+    "ts-node": "^10.9.2",
     "tsx": "^4.19.4",
-    "typescript": "^5"
+    "typescript": "^5.8.3"
   },
   "engines": {
     "node": "20.x || 22.x || 24.x"
-=======
-  "name": "v2",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.25.0",
-    "@types/react": "^19.1.2",
-    "@types/react-dom": "^19.1.2",
-    "@vitejs/plugin-react": "^4.4.1",
-    "eslint": "^9.25.0",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.19",
-    "globals": "^16.0.0",
-    "typescript": "~5.8.3",
-    "typescript-eslint": "^8.30.1",
-    "vite": "^6.3.5"
->>>>>>> 43362b78c4ffe5d0046ca5e4b46de01fd9205aa2
   }
 }
