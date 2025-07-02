@@ -184,14 +184,14 @@ function StatCard({ title, value, unit, change, trend, subtitle }: StatCardProps
       <div className="mt-1.5 flex items-baseline">
         <p className="text-2xl font-bold text-gray-900">{value.toLocaleString()}</p>
         <p className="ml-1 text-sm font-medium text-gray-500">{unit}</p>
-      </div>
+        </div>
       {change && trend && (
         <div className={`mt-2 flex items-center text-sm ${trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
           {trend === 'up' ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
           <span className="ml-1">{change} vs last period</span>
         </div>
-      )}
-      {subtitle && (
+        )}
+        {subtitle && (
         <p className="mt-2 text-sm text-gray-500">{subtitle}</p>
       )}
     </div>
@@ -205,7 +205,7 @@ interface TaskItemProps {
 function TaskItem({ task }: TaskItemProps) {
   return (
     <li className="py-3 flex justify-between items-center">
-      <div>
+        <div>
         <p className="font-medium text-gray-800">{task.name}</p>
         <p className="text-sm text-gray-500">Priority: {task.priority} | Time: {task.time}</p>
       </div>

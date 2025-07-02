@@ -26,8 +26,8 @@ export async function GET(request: Request) {
 
     return NextResponse.json(userDoc.data());
   } catch (error) {
-    console.error('Error fetching user:', error);
-    return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 });
+    console.error('Error fetching user:', error, error instanceof Error ? error.stack : '');
+    return NextResponse.json({ error: 'Failed to fetch user', details: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
 }
 
@@ -60,10 +60,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error creating user:', error);
-    if (error instanceof Error && 'code' in error && error.code === 'auth/id-token-expired') {
+    console.error('Error creating user:', error, error instanceof Error ? error.stack : '');
+    if (error instanceof Error && 'code' in error && (error as any).code === 'auth/id-token-expired') {
         return NextResponse.json({ error: 'Token expired, please log in again.' }, { status: 401 });
     }
-    return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to create user', details: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
 } 
